@@ -1,0 +1,860 @@
+{
+    "cells": [
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### Import libraries."
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 1,
+            "metadata": {
+                "scrolled": false
+            },
+            "outputs": [
+                {
+                    "name": "stdout",
+                    "output_type": "stream",
+                    "text": "Solving environment: done\n\n## Package Plan ##\n\n  environment location: /opt/conda/envs/Python36\n\n  added / updated specs: \n    - geopy\n\n\nThe following packages will be downloaded:\n\n    package                    |            build\n    ---------------------------|-----------------\n    ca-certificates-2020.6.20  |       hecda079_0         145 KB  conda-forge\n    openssl-1.1.1g             |       h516909a_0         2.1 MB  conda-forge\n    geopy-2.0.0                |     pyh9f0ad1d_0          63 KB  conda-forge\n    geographiclib-1.50         |             py_0          34 KB  conda-forge\n    certifi-2020.6.20          |   py36h9f0ad1d_0         151 KB  conda-forge\n    python_abi-3.6             |          1_cp36m           4 KB  conda-forge\n    ------------------------------------------------------------\n                                           Total:         2.5 MB\n\nThe following NEW packages will be INSTALLED:\n\n    geographiclib:   1.50-py_0          conda-forge\n    geopy:           2.0.0-pyh9f0ad1d_0 conda-forge\n    python_abi:      3.6-1_cp36m        conda-forge\n\nThe following packages will be UPDATED:\n\n    certifi:         2020.6.20-py36_0               --> 2020.6.20-py36h9f0ad1d_0 conda-forge\n    openssl:         1.1.1g-h7b6447c_0              --> 1.1.1g-h516909a_0        conda-forge\n\nThe following packages will be DOWNGRADED:\n\n    ca-certificates: 2020.6.24-0                    --> 2020.6.20-hecda079_0     conda-forge\n\n\nDownloading and Extracting Packages\nca-certificates-2020 | 145 KB    | ##################################### | 100% \nopenssl-1.1.1g       | 2.1 MB    | ##################################### | 100% \ngeopy-2.0.0          | 63 KB     | ##################################### | 100% \ngeographiclib-1.50   | 34 KB     | ##################################### | 100% \ncertifi-2020.6.20    | 151 KB    | ##################################### | 100% \npython_abi-3.6       | 4 KB      | ##################################### | 100% \nPreparing transaction: done\nVerifying transaction: done\nExecuting transaction: done\nSolving environment: done\n\n## Package Plan ##\n\n  environment location: /opt/conda/envs/Python36\n\n  added / updated specs: \n    - folium=0.5.0\n\n\nThe following packages will be downloaded:\n\n    package                    |            build\n    ---------------------------|-----------------\n    folium-0.5.0               |             py_0          45 KB  conda-forge\n    vincent-0.4.4              |             py_1          28 KB  conda-forge\n    altair-4.1.0               |             py_1         614 KB  conda-forge\n    branca-0.4.1               |             py_0          26 KB  conda-forge\n    ------------------------------------------------------------\n                                           Total:         713 KB\n\nThe following NEW packages will be INSTALLED:\n\n    altair:  4.1.0-py_1 conda-forge\n    branca:  0.4.1-py_0 conda-forge\n    folium:  0.5.0-py_0 conda-forge\n    vincent: 0.4.4-py_1 conda-forge\n\n\nDownloading and Extracting Packages\nfolium-0.5.0         | 45 KB     | ##################################### | 100% \nvincent-0.4.4        | 28 KB     | ##################################### | 100% \naltair-4.1.0         | 614 KB    | ##################################### | 100% \nbranca-0.4.1         | 26 KB     | ##################################### | 100% \nPreparing transaction: done\nVerifying transaction: done\nExecuting transaction: done\nLibraries imported.\n"
+                }
+            ],
+            "source": "import requests\nimport numpy as np\n\nimport pandas as pd\npd.set_option('display.max_columns', None)\npd.set_option('display.max_rows', None)\n\nimport random\n\nimport json\nfrom pandas.io.json import json_normalize\n\nfrom IPython.display import Image\nfrom IPython.core.display import HTML\n\n!conda install -c conda-forge geopy --yes \nfrom geopy.geocoders import Nominatim\n\n!conda install -c conda-forge folium=0.5.0 --yes\nimport folium\n\nprint('Libraries imported.')"
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### Validate Foursquare credentials."
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 2,
+            "metadata": {},
+            "outputs": [
+                {
+                    "name": "stdout",
+                    "output_type": "stream",
+                    "text": "Your credentials:\nCLIENT_ID: DPR2TRJDTRBYCTN4YIRLNJ4F3GRM3IHAWXWCB4MQGXDU2H5E\nCLIENT_SECRET: ZVGOPN1OCEFCGB5RDDUQXBGE11AXDT2OHB0VNGFUAZUO3COZ\n"
+                }
+            ],
+            "source": "CLIENT_ID = 'DPR2TRJDTRBYCTN4YIRLNJ4F3GRM3IHAWXWCB4MQGXDU2H5E'\nCLIENT_SECRET = 'ZVGOPN1OCEFCGB5RDDUQXBGE11AXDT2OHB0VNGFUAZUO3COZ'\nVERSION = '20200713'\nLIMIT = 30\nprint('Your credentials:')\nprint('CLIENT_ID: ' + CLIENT_ID)\nprint('CLIENT_SECRET: ' + CLIENT_SECRET)"
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### Address of potential property in Downtown Waco off I-35."
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 3,
+            "metadata": {
+                "scrolled": true
+            },
+            "outputs": [
+                {
+                    "name": "stdout",
+                    "output_type": "stream",
+                    "text": "The geographical coordiate of Waco are 31.555734857142856, -97.13097791836735.\n"
+                }
+            ],
+            "source": "address = '508 Franklin Ave, Waco, TX'\n\ngeolocator = Nominatim(user_agent=\"Texas_agent\")\nlocation = geolocator.geocode(address)\nlatitude = location.latitude\nlongitude = location.longitude\nprint('The geographical coordiate of Waco are {}, {}.'.format(latitude, longitude))"
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### '508 Franklin Ave, Waco, TX' mark on Folium map of Waco."
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 4,
+            "metadata": {
+                "scrolled": true
+            },
+            "outputs": [
+                {
+                    "data": {
+                        "text/html": "<div style=\"width:100%;\"><div style=\"position:relative;width:100%;height:0;padding-bottom:60%;\"><span style=\"color:#565656\">Make this Notebook Trusted to load map: File -> Trust Notebook</span><iframe src=\"about:blank\" style=\"position:absolute;width:100%;height:100%;left:0;top:0;border:none !important;\" data-html=PCFET0NUWVBFIGh0bWw+CjxoZWFkPiAgICAKICAgIDxtZXRhIGh0dHAtZXF1aXY9ImNvbnRlbnQtdHlwZSIgY29udGVudD0idGV4dC9odG1sOyBjaGFyc2V0PVVURi04IiAvPgogICAgPHNjcmlwdD5MX1BSRUZFUl9DQU5WQVMgPSBmYWxzZTsgTF9OT19UT1VDSCA9IGZhbHNlOyBMX0RJU0FCTEVfM0QgPSBmYWxzZTs8L3NjcmlwdD4KICAgIDxzY3JpcHQgc3JjPSJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvbnBtL2xlYWZsZXRAMS4yLjAvZGlzdC9sZWFmbGV0LmpzIj48L3NjcmlwdD4KICAgIDxzY3JpcHQgc3JjPSJodHRwczovL2FqYXguZ29vZ2xlYXBpcy5jb20vYWpheC9saWJzL2pxdWVyeS8xLjExLjEvanF1ZXJ5Lm1pbi5qcyI+PC9zY3JpcHQ+CiAgICA8c2NyaXB0IHNyYz0iaHR0cHM6Ly9tYXhjZG4uYm9vdHN0cmFwY2RuLmNvbS9ib290c3RyYXAvMy4yLjAvanMvYm9vdHN0cmFwLm1pbi5qcyI+PC9zY3JpcHQ+CiAgICA8c2NyaXB0IHNyYz0iaHR0cHM6Ly9jZG5qcy5jbG91ZGZsYXJlLmNvbS9hamF4L2xpYnMvTGVhZmxldC5hd2Vzb21lLW1hcmtlcnMvMi4wLjIvbGVhZmxldC5hd2Vzb21lLW1hcmtlcnMuanMiPjwvc2NyaXB0PgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvbnBtL2xlYWZsZXRAMS4yLjAvZGlzdC9sZWFmbGV0LmNzcyIvPgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL21heGNkbi5ib290c3RyYXBjZG4uY29tL2Jvb3RzdHJhcC8zLjIuMC9jc3MvYm9vdHN0cmFwLm1pbi5jc3MiLz4KICAgIDxsaW5rIHJlbD0ic3R5bGVzaGVldCIgaHJlZj0iaHR0cHM6Ly9tYXhjZG4uYm9vdHN0cmFwY2RuLmNvbS9ib290c3RyYXAvMy4yLjAvY3NzL2Jvb3RzdHJhcC10aGVtZS5taW4uY3NzIi8+CiAgICA8bGluayByZWw9InN0eWxlc2hlZXQiIGhyZWY9Imh0dHBzOi8vbWF4Y2RuLmJvb3RzdHJhcGNkbi5jb20vZm9udC1hd2Vzb21lLzQuNi4zL2Nzcy9mb250LWF3ZXNvbWUubWluLmNzcyIvPgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL2NkbmpzLmNsb3VkZmxhcmUuY29tL2FqYXgvbGlicy9MZWFmbGV0LmF3ZXNvbWUtbWFya2Vycy8yLjAuMi9sZWFmbGV0LmF3ZXNvbWUtbWFya2Vycy5jc3MiLz4KICAgIDxsaW5rIHJlbD0ic3R5bGVzaGVldCIgaHJlZj0iaHR0cHM6Ly9yYXdnaXQuY29tL3B5dGhvbi12aXN1YWxpemF0aW9uL2ZvbGl1bS9tYXN0ZXIvZm9saXVtL3RlbXBsYXRlcy9sZWFmbGV0LmF3ZXNvbWUucm90YXRlLmNzcyIvPgogICAgPHN0eWxlPmh0bWwsIGJvZHkge3dpZHRoOiAxMDAlO2hlaWdodDogMTAwJTttYXJnaW46IDA7cGFkZGluZzogMDt9PC9zdHlsZT4KICAgIDxzdHlsZT4jbWFwIHtwb3NpdGlvbjphYnNvbHV0ZTt0b3A6MDtib3R0b206MDtyaWdodDowO2xlZnQ6MDt9PC9zdHlsZT4KICAgIAogICAgICAgICAgICA8c3R5bGU+ICNtYXBfYjViMTkyYTZhNDRjNDExN2ExMzAwMGE1ZmJjMWJkMDUgewogICAgICAgICAgICAgICAgcG9zaXRpb24gOiByZWxhdGl2ZTsKICAgICAgICAgICAgICAgIHdpZHRoIDogMTAwLjAlOwogICAgICAgICAgICAgICAgaGVpZ2h0OiAxMDAuMCU7CiAgICAgICAgICAgICAgICBsZWZ0OiAwLjAlOwogICAgICAgICAgICAgICAgdG9wOiAwLjAlOwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICA8L3N0eWxlPgogICAgICAgIAo8L2hlYWQ+Cjxib2R5PiAgICAKICAgIAogICAgICAgICAgICA8ZGl2IGNsYXNzPSJmb2xpdW0tbWFwIiBpZD0ibWFwX2I1YjE5MmE2YTQ0YzQxMTdhMTMwMDBhNWZiYzFiZDA1IiA+PC9kaXY+CiAgICAgICAgCjwvYm9keT4KPHNjcmlwdD4gICAgCiAgICAKCiAgICAgICAgICAgIAogICAgICAgICAgICAgICAgdmFyIGJvdW5kcyA9IG51bGw7CiAgICAgICAgICAgIAoKICAgICAgICAgICAgdmFyIG1hcF9iNWIxOTJhNmE0NGM0MTE3YTEzMDAwYTVmYmMxYmQwNSA9IEwubWFwKAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgJ21hcF9iNWIxOTJhNmE0NGM0MTE3YTEzMDAwYTVmYmMxYmQwNScsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB7Y2VudGVyOiBbMzEuNTU1NzM0ODU3MTQyODU2LC05Ny4xMzA5Nzc5MTgzNjczNV0sCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB6b29tOiAxNCwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIG1heEJvdW5kczogYm91bmRzLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgbGF5ZXJzOiBbXSwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHdvcmxkQ29weUp1bXA6IGZhbHNlLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgY3JzOiBMLkNSUy5FUFNHMzg1NwogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB9KTsKICAgICAgICAgICAgCiAgICAgICAgCiAgICAKICAgICAgICAgICAgdmFyIHRpbGVfbGF5ZXJfNTU1ZGQyODhjYzQ1NDAwNGJkZGIwNjg3NGY1YzQxZjQgPSBMLnRpbGVMYXllcigKICAgICAgICAgICAgICAgICdodHRwczovL3tzfS50aWxlLm9wZW5zdHJlZXRtYXAub3JnL3t6fS97eH0ve3l9LnBuZycsCiAgICAgICAgICAgICAgICB7CiAgImF0dHJpYnV0aW9uIjogbnVsbCwKICAiZGV0ZWN0UmV0aW5hIjogZmFsc2UsCiAgIm1heFpvb20iOiAxOCwKICAibWluWm9vbSI6IDEsCiAgIm5vV3JhcCI6IGZhbHNlLAogICJzdWJkb21haW5zIjogImFiYyIKfQogICAgICAgICAgICAgICAgKS5hZGRUbyhtYXBfYjViMTkyYTZhNDRjNDExN2ExMzAwMGE1ZmJjMWJkMDUpOwogICAgICAgIAogICAgCiAgICAgICAgICAgIHZhciBjaXJjbGVfbWFya2VyX2YwMGRmYzY5ZjBjYzQzNDJhMzA0MzE4OTc5YmE0NmFiID0gTC5jaXJjbGVNYXJrZXIoCiAgICAgICAgICAgICAgICBbMzEuNTU1NzM0ODU3MTQyODU2LC05Ny4xMzA5Nzc5MTgzNjczNV0sCiAgICAgICAgICAgICAgICB7CiAgImJ1YmJsaW5nTW91c2VFdmVudHMiOiB0cnVlLAogICJjb2xvciI6ICJyZWQiLAogICJkYXNoQXJyYXkiOiBudWxsLAogICJkYXNoT2Zmc2V0IjogbnVsbCwKICAiZmlsbCI6IHRydWUsCiAgImZpbGxDb2xvciI6ICJyZWQiLAogICJmaWxsT3BhY2l0eSI6IDAuNiwKICAiZmlsbFJ1bGUiOiAiZXZlbm9kZCIsCiAgImxpbmVDYXAiOiAicm91bmQiLAogICJsaW5lSm9pbiI6ICJyb3VuZCIsCiAgIm9wYWNpdHkiOiAxLjAsCiAgInJhZGl1cyI6IDgsCiAgInN0cm9rZSI6IHRydWUsCiAgIndlaWdodCI6IDMKfQogICAgICAgICAgICAgICAgKS5hZGRUbyhtYXBfYjViMTkyYTZhNDRjNDExN2ExMzAwMGE1ZmJjMWJkMDUpOwogICAgICAgICAgICAKICAgIAogICAgICAgICAgICB2YXIgcG9wdXBfYmYwOTY1YmNmNWY0NDQ2MWJhNzUwOTQ3NDkyODVmMDcgPSBMLnBvcHVwKHttYXhXaWR0aDogJzMwMCd9KTsKCiAgICAgICAgICAgIAogICAgICAgICAgICAgICAgdmFyIGh0bWxfNjliMTkyOWMwNWUyNDE5YWEyY2Y1NjRmZjU0NDMwNTEgPSAkKCc8ZGl2IGlkPSJodG1sXzY5YjE5MjljMDVlMjQxOWFhMmNmNTY0ZmY1NDQzMDUxIiBzdHlsZT0id2lkdGg6IDEwMC4wJTsgaGVpZ2h0OiAxMDAuMCU7Ij5Eb3dudG93biBXYWNvIExvY2F0aW9uPC9kaXY+JylbMF07CiAgICAgICAgICAgICAgICBwb3B1cF9iZjA5NjViY2Y1ZjQ0NDYxYmE3NTA5NDc0OTI4NWYwNy5zZXRDb250ZW50KGh0bWxfNjliMTkyOWMwNWUyNDE5YWEyY2Y1NjRmZjU0NDMwNTEpOwogICAgICAgICAgICAKCiAgICAgICAgICAgIGNpcmNsZV9tYXJrZXJfZjAwZGZjNjlmMGNjNDM0MmEzMDQzMTg5NzliYTQ2YWIuYmluZFBvcHVwKHBvcHVwX2JmMDk2NWJjZjVmNDQ0NjFiYTc1MDk0NzQ5Mjg1ZjA3KTsKCiAgICAgICAgICAgIAogICAgICAgIAo8L3NjcmlwdD4= onload=\"this.contentDocument.open();this.contentDocument.write(atob(this.getAttribute('data-html')));this.contentDocument.close();\" allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe></div></div>",
+                        "text/plain": "<folium.folium.Map at 0x7f52de43c5f8>"
+                    },
+                    "execution_count": 4,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "map_waco = folium.Map(location=[latitude, longitude], zoom_start=14)\n\nfolium.features.CircleMarker(\n    [latitude, longitude],\n    radius=8,\n    color='red',\n    popup='Downtown Waco Location',\n    fill = True,\n    fill_color = 'red',\n    fill_opacity = 0.6\n).add_to(map_waco)\n \nmap_waco"
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### First search for 'BBQ' in Downtown Waco."
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 5,
+            "metadata": {},
+            "outputs": [
+                {
+                    "name": "stdout",
+                    "output_type": "stream",
+                    "text": "bbq.... OK!\n"
+                }
+            ],
+            "source": "search_query = 'bbq'\nradius = 500\nprint(search_query + '.... OK!')"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 6,
+            "metadata": {},
+            "outputs": [
+                {
+                    "data": {
+                        "text/plain": "'https://api.foursquare.com/v2/venues/search?client_id=DPR2TRJDTRBYCTN4YIRLNJ4F3GRM3IHAWXWCB4MQGXDU2H5E&client_secret=ZVGOPN1OCEFCGB5RDDUQXBGE11AXDT2OHB0VNGFUAZUO3COZ&ll=31.555734857142856,-97.13097791836735&v=20200713&query=bbq&radius=500&limit=30'"
+                    },
+                    "execution_count": 6,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "url = 'https://api.foursquare.com/v2/venues/search?client_id={}&client_secret={}&ll={},{}&v={}&query={}&radius={}&limit={}'.format(CLIENT_ID, CLIENT_SECRET, latitude, longitude, VERSION, search_query, radius, LIMIT)\nurl"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 7,
+            "metadata": {
+                "scrolled": true
+            },
+            "outputs": [
+                {
+                    "data": {
+                        "text/plain": "{'meta': {'code': 200, 'requestId': '5f0c74e6a10064683eb71228'},\n 'response': {'venues': [{'id': '560d60e8498ed394e9de762e',\n    'name': 'Honky Tonk Kid BBQ',\n    'location': {'address': '112 Mary Avenue',\n     'crossStreet': 'University Drive',\n     'lat': 31.557973,\n     'lng': -97.126022,\n     'labeledLatLngs': [{'label': 'display',\n       'lat': 31.557973,\n       'lng': -97.126022}],\n     'distance': 532,\n     'postalCode': '76701',\n     'cc': 'US',\n     'city': 'Waco',\n     'state': 'TX',\n     'country': 'United States',\n     'formattedAddress': ['112 Mary Avenue (University Drive)',\n      'Waco, TX 76701',\n      'United States']},\n    'categories': [{'id': '4bf58dd8d48988d1df931735',\n      'name': 'BBQ Joint',\n      'pluralName': 'BBQ Joints',\n      'shortName': 'BBQ',\n      'icon': {'prefix': 'https://ss3.4sqi.net/img/categories_v2/food/bbqalt_',\n       'suffix': '.png'},\n      'primary': True}],\n    'referralId': 'v-1594651938',\n    'hasPerk': False}]}}"
+                    },
+                    "execution_count": 7,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "results = requests.get(url).json()\nresults"
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### Get relevant part of JSON file and transform into pandas dataframe. "
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 8,
+            "metadata": {},
+            "outputs": [],
+            "source": "venues = results['response']['venues']"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 9,
+            "metadata": {
+                "scrolled": true
+            },
+            "outputs": [
+                {
+                    "data": {
+                        "text/html": "<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>categories</th>\n      <th>hasPerk</th>\n      <th>id</th>\n      <th>location.address</th>\n      <th>location.cc</th>\n      <th>location.city</th>\n      <th>location.country</th>\n      <th>location.crossStreet</th>\n      <th>location.distance</th>\n      <th>location.formattedAddress</th>\n      <th>location.labeledLatLngs</th>\n      <th>location.lat</th>\n      <th>location.lng</th>\n      <th>location.postalCode</th>\n      <th>location.state</th>\n      <th>name</th>\n      <th>referralId</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>[{'id': '4bf58dd8d48988d1df931735', 'name': 'B...</td>\n      <td>False</td>\n      <td>560d60e8498ed394e9de762e</td>\n      <td>112 Mary Avenue</td>\n      <td>US</td>\n      <td>Waco</td>\n      <td>United States</td>\n      <td>University Drive</td>\n      <td>532</td>\n      <td>[112 Mary Avenue (University Drive), Waco, TX ...</td>\n      <td>[{'label': 'display', 'lat': 31.557973, 'lng':...</td>\n      <td>31.557973</td>\n      <td>-97.126022</td>\n      <td>76701</td>\n      <td>TX</td>\n      <td>Honky Tonk Kid BBQ</td>\n      <td>v-1594651938</td>\n    </tr>\n  </tbody>\n</table>\n</div>",
+                        "text/plain": "                                          categories  hasPerk  \\\n0  [{'id': '4bf58dd8d48988d1df931735', 'name': 'B...    False   \n\n                         id location.address location.cc location.city  \\\n0  560d60e8498ed394e9de762e  112 Mary Avenue          US          Waco   \n\n  location.country location.crossStreet  location.distance  \\\n0    United States     University Drive                532   \n\n                           location.formattedAddress  \\\n0  [112 Mary Avenue (University Drive), Waco, TX ...   \n\n                             location.labeledLatLngs  location.lat  \\\n0  [{'label': 'display', 'lat': 31.557973, 'lng':...     31.557973   \n\n   location.lng location.postalCode location.state                name  \\\n0    -97.126022               76701             TX  Honky Tonk Kid BBQ   \n\n     referralId  \n0  v-1594651938  "
+                    },
+                    "execution_count": 9,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "dataframe = json_normalize(venues)\ndataframe.head()"
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### Define information of interest."
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 10,
+            "metadata": {
+                "scrolled": false
+            },
+            "outputs": [
+                {
+                    "data": {
+                        "text/html": "<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>name</th>\n      <th>categories</th>\n      <th>address</th>\n      <th>cc</th>\n      <th>city</th>\n      <th>country</th>\n      <th>crossStreet</th>\n      <th>distance</th>\n      <th>formattedAddress</th>\n      <th>labeledLatLngs</th>\n      <th>lat</th>\n      <th>lng</th>\n      <th>postalCode</th>\n      <th>state</th>\n      <th>id</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>Honky Tonk Kid BBQ</td>\n      <td>BBQ Joint</td>\n      <td>112 Mary Avenue</td>\n      <td>US</td>\n      <td>Waco</td>\n      <td>United States</td>\n      <td>University Drive</td>\n      <td>532</td>\n      <td>[112 Mary Avenue (University Drive), Waco, TX ...</td>\n      <td>[{'label': 'display', 'lat': 31.557973, 'lng':...</td>\n      <td>31.557973</td>\n      <td>-97.126022</td>\n      <td>76701</td>\n      <td>TX</td>\n      <td>560d60e8498ed394e9de762e</td>\n    </tr>\n  </tbody>\n</table>\n</div>",
+                        "text/plain": "                 name categories          address  cc  city        country  \\\n0  Honky Tonk Kid BBQ  BBQ Joint  112 Mary Avenue  US  Waco  United States   \n\n        crossStreet  distance  \\\n0  University Drive       532   \n\n                                    formattedAddress  \\\n0  [112 Mary Avenue (University Drive), Waco, TX ...   \n\n                                      labeledLatLngs        lat        lng  \\\n0  [{'label': 'display', 'lat': 31.557973, 'lng':...  31.557973 -97.126022   \n\n  postalCode state                        id  \n0      76701    TX  560d60e8498ed394e9de762e  "
+                    },
+                    "execution_count": 10,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "filtered_columns = ['name', 'categories'] + [col for col in dataframe.columns if col.startswith('location.')] + ['id']\ndataframe_filtered = dataframe.loc[:, filtered_columns]\n\ndef get_category_type(row):\n    try:\n        categories_list = row['categories']\n    except:\n        categories_list = row['venue.categories']\n    \n    if len(categories_list) == 0:\n        return None\n    else:\n        return categories_list[0]['name']\n\ndataframe_filtered['categories'] = dataframe_filtered.apply(get_category_type, axis=1)\n\ndataframe_filtered.columns = [column.split('.')[-1] for column in dataframe_filtered.columns]\n\ndataframe_filtered"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 11,
+            "metadata": {},
+            "outputs": [
+                {
+                    "data": {
+                        "text/plain": "0    Honky Tonk Kid BBQ\nName: name, dtype: object"
+                    },
+                    "execution_count": 11,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "dataframe_filtered.name"
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### Location of \"Honky Tonk Kid BBQ\" in proximity to the Downtown location. "
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 12,
+            "metadata": {
+                "scrolled": true
+            },
+            "outputs": [
+                {
+                    "data": {
+                        "text/html": "<div style=\"width:100%;\"><div style=\"position:relative;width:100%;height:0;padding-bottom:60%;\"><span style=\"color:#565656\">Make this Notebook Trusted to load map: File -> Trust Notebook</span><iframe src=\"about:blank\" style=\"position:absolute;width:100%;height:100%;left:0;top:0;border:none !important;\" data-html=PCFET0NUWVBFIGh0bWw+CjxoZWFkPiAgICAKICAgIDxtZXRhIGh0dHAtZXF1aXY9ImNvbnRlbnQtdHlwZSIgY29udGVudD0idGV4dC9odG1sOyBjaGFyc2V0PVVURi04IiAvPgogICAgPHNjcmlwdD5MX1BSRUZFUl9DQU5WQVMgPSBmYWxzZTsgTF9OT19UT1VDSCA9IGZhbHNlOyBMX0RJU0FCTEVfM0QgPSBmYWxzZTs8L3NjcmlwdD4KICAgIDxzY3JpcHQgc3JjPSJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvbnBtL2xlYWZsZXRAMS4yLjAvZGlzdC9sZWFmbGV0LmpzIj48L3NjcmlwdD4KICAgIDxzY3JpcHQgc3JjPSJodHRwczovL2FqYXguZ29vZ2xlYXBpcy5jb20vYWpheC9saWJzL2pxdWVyeS8xLjExLjEvanF1ZXJ5Lm1pbi5qcyI+PC9zY3JpcHQ+CiAgICA8c2NyaXB0IHNyYz0iaHR0cHM6Ly9tYXhjZG4uYm9vdHN0cmFwY2RuLmNvbS9ib290c3RyYXAvMy4yLjAvanMvYm9vdHN0cmFwLm1pbi5qcyI+PC9zY3JpcHQ+CiAgICA8c2NyaXB0IHNyYz0iaHR0cHM6Ly9jZG5qcy5jbG91ZGZsYXJlLmNvbS9hamF4L2xpYnMvTGVhZmxldC5hd2Vzb21lLW1hcmtlcnMvMi4wLjIvbGVhZmxldC5hd2Vzb21lLW1hcmtlcnMuanMiPjwvc2NyaXB0PgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvbnBtL2xlYWZsZXRAMS4yLjAvZGlzdC9sZWFmbGV0LmNzcyIvPgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL21heGNkbi5ib290c3RyYXBjZG4uY29tL2Jvb3RzdHJhcC8zLjIuMC9jc3MvYm9vdHN0cmFwLm1pbi5jc3MiLz4KICAgIDxsaW5rIHJlbD0ic3R5bGVzaGVldCIgaHJlZj0iaHR0cHM6Ly9tYXhjZG4uYm9vdHN0cmFwY2RuLmNvbS9ib290c3RyYXAvMy4yLjAvY3NzL2Jvb3RzdHJhcC10aGVtZS5taW4uY3NzIi8+CiAgICA8bGluayByZWw9InN0eWxlc2hlZXQiIGhyZWY9Imh0dHBzOi8vbWF4Y2RuLmJvb3RzdHJhcGNkbi5jb20vZm9udC1hd2Vzb21lLzQuNi4zL2Nzcy9mb250LWF3ZXNvbWUubWluLmNzcyIvPgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL2NkbmpzLmNsb3VkZmxhcmUuY29tL2FqYXgvbGlicy9MZWFmbGV0LmF3ZXNvbWUtbWFya2Vycy8yLjAuMi9sZWFmbGV0LmF3ZXNvbWUtbWFya2Vycy5jc3MiLz4KICAgIDxsaW5rIHJlbD0ic3R5bGVzaGVldCIgaHJlZj0iaHR0cHM6Ly9yYXdnaXQuY29tL3B5dGhvbi12aXN1YWxpemF0aW9uL2ZvbGl1bS9tYXN0ZXIvZm9saXVtL3RlbXBsYXRlcy9sZWFmbGV0LmF3ZXNvbWUucm90YXRlLmNzcyIvPgogICAgPHN0eWxlPmh0bWwsIGJvZHkge3dpZHRoOiAxMDAlO2hlaWdodDogMTAwJTttYXJnaW46IDA7cGFkZGluZzogMDt9PC9zdHlsZT4KICAgIDxzdHlsZT4jbWFwIHtwb3NpdGlvbjphYnNvbHV0ZTt0b3A6MDtib3R0b206MDtyaWdodDowO2xlZnQ6MDt9PC9zdHlsZT4KICAgIAogICAgICAgICAgICA8c3R5bGU+ICNtYXBfMWUwY2FjNmEwM2I3NGZiN2IxNGNmZWU1ZTY1MDY1NjUgewogICAgICAgICAgICAgICAgcG9zaXRpb24gOiByZWxhdGl2ZTsKICAgICAgICAgICAgICAgIHdpZHRoIDogMTAwLjAlOwogICAgICAgICAgICAgICAgaGVpZ2h0OiAxMDAuMCU7CiAgICAgICAgICAgICAgICBsZWZ0OiAwLjAlOwogICAgICAgICAgICAgICAgdG9wOiAwLjAlOwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICA8L3N0eWxlPgogICAgICAgIAo8L2hlYWQ+Cjxib2R5PiAgICAKICAgIAogICAgICAgICAgICA8ZGl2IGNsYXNzPSJmb2xpdW0tbWFwIiBpZD0ibWFwXzFlMGNhYzZhMDNiNzRmYjdiMTRjZmVlNWU2NTA2NTY1IiA+PC9kaXY+CiAgICAgICAgCjwvYm9keT4KPHNjcmlwdD4gICAgCiAgICAKCiAgICAgICAgICAgIAogICAgICAgICAgICAgICAgdmFyIGJvdW5kcyA9IG51bGw7CiAgICAgICAgICAgIAoKICAgICAgICAgICAgdmFyIG1hcF8xZTBjYWM2YTAzYjc0ZmI3YjE0Y2ZlZTVlNjUwNjU2NSA9IEwubWFwKAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgJ21hcF8xZTBjYWM2YTAzYjc0ZmI3YjE0Y2ZlZTVlNjUwNjU2NScsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB7Y2VudGVyOiBbMzEuNTU1NzM0ODU3MTQyODU2LC05Ny4xMzA5Nzc5MTgzNjczNV0sCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB6b29tOiAxNCwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIG1heEJvdW5kczogYm91bmRzLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgbGF5ZXJzOiBbXSwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHdvcmxkQ29weUp1bXA6IGZhbHNlLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgY3JzOiBMLkNSUy5FUFNHMzg1NwogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB9KTsKICAgICAgICAgICAgCiAgICAgICAgCiAgICAKICAgICAgICAgICAgdmFyIHRpbGVfbGF5ZXJfMWFmNmFlNzk4Mzk0NDBjYTg0MTE5MDVkMjZmODk3ZjggPSBMLnRpbGVMYXllcigKICAgICAgICAgICAgICAgICdodHRwczovL3tzfS50aWxlLm9wZW5zdHJlZXRtYXAub3JnL3t6fS97eH0ve3l9LnBuZycsCiAgICAgICAgICAgICAgICB7CiAgImF0dHJpYnV0aW9uIjogbnVsbCwKICAiZGV0ZWN0UmV0aW5hIjogZmFsc2UsCiAgIm1heFpvb20iOiAxOCwKICAibWluWm9vbSI6IDEsCiAgIm5vV3JhcCI6IGZhbHNlLAogICJzdWJkb21haW5zIjogImFiYyIKfQogICAgICAgICAgICAgICAgKS5hZGRUbyhtYXBfMWUwY2FjNmEwM2I3NGZiN2IxNGNmZWU1ZTY1MDY1NjUpOwogICAgICAgIAogICAgCiAgICAgICAgICAgIHZhciBjaXJjbGVfbWFya2VyXzUyM2QwOTJjNDY3YzQ3MTNhMGNlOGI2MWZjYTViOTNhID0gTC5jaXJjbGVNYXJrZXIoCiAgICAgICAgICAgICAgICBbMzEuNTU1NzM0ODU3MTQyODU2LC05Ny4xMzA5Nzc5MTgzNjczNV0sCiAgICAgICAgICAgICAgICB7CiAgImJ1YmJsaW5nTW91c2VFdmVudHMiOiB0cnVlLAogICJjb2xvciI6ICJyZWQiLAogICJkYXNoQXJyYXkiOiBudWxsLAogICJkYXNoT2Zmc2V0IjogbnVsbCwKICAiZmlsbCI6IHRydWUsCiAgImZpbGxDb2xvciI6ICJyZWQiLAogICJmaWxsT3BhY2l0eSI6IDAuNiwKICAiZmlsbFJ1bGUiOiAiZXZlbm9kZCIsCiAgImxpbmVDYXAiOiAicm91bmQiLAogICJsaW5lSm9pbiI6ICJyb3VuZCIsCiAgIm9wYWNpdHkiOiAxLjAsCiAgInJhZGl1cyI6IDEwLAogICJzdHJva2UiOiB0cnVlLAogICJ3ZWlnaHQiOiAzCn0KICAgICAgICAgICAgICAgICkuYWRkVG8obWFwXzFlMGNhYzZhMDNiNzRmYjdiMTRjZmVlNWU2NTA2NTY1KTsKICAgICAgICAgICAgCiAgICAKICAgICAgICAgICAgdmFyIHBvcHVwX2MyYzcxNjE1NTdiZDQzY2JhZTZmZTYyZDRmZjk4ODQ5ID0gTC5wb3B1cCh7bWF4V2lkdGg6ICczMDAnfSk7CgogICAgICAgICAgICAKICAgICAgICAgICAgICAgIHZhciBodG1sXzdiOWI5MDk3NTE4ZjQwNjViYjJkYzQyZTAyZjAwNzc4ID0gJCgnPGRpdiBpZD0iaHRtbF83YjliOTA5NzUxOGY0MDY1YmIyZGM0MmUwMmYwMDc3OCIgc3R5bGU9IndpZHRoOiAxMDAuMCU7IGhlaWdodDogMTAwLjAlOyI+RG93bnRvd24gV2FjbyBMb2NhdGlvbjwvZGl2PicpWzBdOwogICAgICAgICAgICAgICAgcG9wdXBfYzJjNzE2MTU1N2JkNDNjYmFlNmZlNjJkNGZmOTg4NDkuc2V0Q29udGVudChodG1sXzdiOWI5MDk3NTE4ZjQwNjViYjJkYzQyZTAyZjAwNzc4KTsKICAgICAgICAgICAgCgogICAgICAgICAgICBjaXJjbGVfbWFya2VyXzUyM2QwOTJjNDY3YzQ3MTNhMGNlOGI2MWZjYTViOTNhLmJpbmRQb3B1cChwb3B1cF9jMmM3MTYxNTU3YmQ0M2NiYWU2ZmU2MmQ0ZmY5ODg0OSk7CgogICAgICAgICAgICAKICAgICAgICAKICAgIAogICAgICAgICAgICB2YXIgY2lyY2xlX21hcmtlcl9kNWI2ZjNiOGI5MWI0ZjcyODM1Y2YwMjJhNTNlNzZkYiA9IEwuY2lyY2xlTWFya2VyKAogICAgICAgICAgICAgICAgWzMxLjU1Nzk3MywtOTcuMTI2MDIyXSwKICAgICAgICAgICAgICAgIHsKICAiYnViYmxpbmdNb3VzZUV2ZW50cyI6IHRydWUsCiAgImNvbG9yIjogImJsdWUiLAogICJkYXNoQXJyYXkiOiBudWxsLAogICJkYXNoT2Zmc2V0IjogbnVsbCwKICAiZmlsbCI6IHRydWUsCiAgImZpbGxDb2xvciI6ICJibHVlIiwKICAiZmlsbE9wYWNpdHkiOiAwLjYsCiAgImZpbGxSdWxlIjogImV2ZW5vZGQiLAogICJsaW5lQ2FwIjogInJvdW5kIiwKICAibGluZUpvaW4iOiAicm91bmQiLAogICJvcGFjaXR5IjogMS4wLAogICJyYWRpdXMiOiA1LAogICJzdHJva2UiOiB0cnVlLAogICJ3ZWlnaHQiOiAzCn0KICAgICAgICAgICAgICAgICkuYWRkVG8obWFwXzFlMGNhYzZhMDNiNzRmYjdiMTRjZmVlNWU2NTA2NTY1KTsKICAgICAgICAgICAgCiAgICAKICAgICAgICAgICAgdmFyIHBvcHVwXzdjMGQ2MTZkYWU3YjQ1OTU5MDEwOWQ2MzcwNjkzNDczID0gTC5wb3B1cCh7bWF4V2lkdGg6ICczMDAnfSk7CgogICAgICAgICAgICAKICAgICAgICAgICAgICAgIHZhciBodG1sXzQwOTljOWM5MDJhMjQ2MTY4NGMzOWZmNTk1OGMyMjk1ID0gJCgnPGRpdiBpZD0iaHRtbF80MDk5YzljOTAyYTI0NjE2ODRjMzlmZjU5NThjMjI5NSIgc3R5bGU9IndpZHRoOiAxMDAuMCU7IGhlaWdodDogMTAwLjAlOyI+QkJRIEpvaW50PC9kaXY+JylbMF07CiAgICAgICAgICAgICAgICBwb3B1cF83YzBkNjE2ZGFlN2I0NTk1OTAxMDlkNjM3MDY5MzQ3My5zZXRDb250ZW50KGh0bWxfNDA5OWM5YzkwMmEyNDYxNjg0YzM5ZmY1OTU4YzIyOTUpOwogICAgICAgICAgICAKCiAgICAgICAgICAgIGNpcmNsZV9tYXJrZXJfZDViNmYzYjhiOTFiNGY3MjgzNWNmMDIyYTUzZTc2ZGIuYmluZFBvcHVwKHBvcHVwXzdjMGQ2MTZkYWU3YjQ1OTU5MDEwOWQ2MzcwNjkzNDczKTsKCiAgICAgICAgICAgIAogICAgICAgIAo8L3NjcmlwdD4= onload=\"this.contentDocument.open();this.contentDocument.write(atob(this.getAttribute('data-html')));this.contentDocument.close();\" allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe></div></div>",
+                        "text/plain": "<folium.folium.Map at 0x7f52ddf38be0>"
+                    },
+                    "execution_count": 12,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "map_waco = folium.Map(location=[latitude, longitude], zoom_start=14)\n\nfolium.features.CircleMarker(\n    [latitude, longitude],\n    radius=10,\n    color='red',\n    popup='Downtown Waco Location',\n    fill = True,\n    fill_color = 'red',\n    fill_opacity = 0.6\n).add_to(map_waco)\n\nfor lat, lng, label in zip(dataframe_filtered.lat, dataframe_filtered.lng, dataframe_filtered.categories):\n    folium.features.CircleMarker(\n    [lat, lng],\n    radius=5,\n    color='blue',\n    popup=label,\n    fill = True,\n    fill_color='blue',\n    fill_opacity=0.6\n    ).add_to(map_waco)\n    \nmap_waco"
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### Let's explore \"Honky Tonk Kid BBQ.\""
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 13,
+            "metadata": {},
+            "outputs": [
+                {
+                    "data": {
+                        "text/plain": "'https://api.foursquare.com/v2/venues/560d60e8498ed394e9de762e?client_id=DPR2TRJDTRBYCTN4YIRLNJ4F3GRM3IHAWXWCB4MQGXDU2H5E&client_secret=ZVGOPN1OCEFCGB5RDDUQXBGE11AXDT2OHB0VNGFUAZUO3COZ&v=20200713'"
+                    },
+                    "execution_count": 13,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "venue_id = '560d60e8498ed394e9de762e'\nurl = 'https://api.foursquare.com/v2/venues/{}?client_id={}&client_secret={}&v={}'.format(venue_id, CLIENT_ID, CLIENT_SECRET, VERSION)\nurl"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 14,
+            "metadata": {},
+            "outputs": [
+                {
+                    "name": "stdout",
+                    "output_type": "stream",
+                    "text": "dict_keys(['id', 'name', 'contact', 'location', 'canonicalUrl', 'categories', 'verified', 'stats', 'price', 'likes', 'dislike', 'ok', 'allowMenuUrlEdit', 'beenHere', 'specials', 'photos', 'reasons', 'description', 'hereNow', 'createdAt', 'tips', 'shortUrl', 'timeZone', 'listed', 'hours', 'seasonalHours', 'defaultHours', 'pageUpdates', 'inbox', 'attributes', 'bestPhoto'])\n"
+                },
+                {
+                    "data": {
+                        "text/plain": "{'id': '560d60e8498ed394e9de762e',\n 'name': 'Honky Tonk Kid BBQ',\n 'contact': {'phone': '2547492368',\n  'formattedPhone': '(254) 749-2368',\n  'twitter': 'honkytonkkidbbq',\n  'instagram': 'honkytonkkidbbq'},\n 'location': {'address': '112 Mary Avenue',\n  'crossStreet': 'University Drive',\n  'lat': 31.557973,\n  'lng': -97.126022,\n  'labeledLatLngs': [{'label': 'display',\n    'lat': 31.557973,\n    'lng': -97.126022}],\n  'postalCode': '76701',\n  'cc': 'US',\n  'city': 'Waco',\n  'state': 'TX',\n  'country': 'United States',\n  'formattedAddress': ['112 Mary Avenue (University Drive)',\n   'Waco, TX 76701',\n   'United States']},\n 'canonicalUrl': 'https://foursquare.com/v/honky-tonk-kid-bbq/560d60e8498ed394e9de762e',\n 'categories': [{'id': '4bf58dd8d48988d1df931735',\n   'name': 'BBQ Joint',\n   'pluralName': 'BBQ Joints',\n   'shortName': 'BBQ',\n   'icon': {'prefix': 'https://ss3.4sqi.net/img/categories_v2/food/bbqalt_',\n    'suffix': '.png'},\n   'primary': True}],\n 'verified': False,\n 'stats': {'tipCount': 4},\n 'price': {'tier': 2, 'message': 'Moderate', 'currency': '$'},\n 'likes': {'count': 3,\n  'groups': [{'type': 'others',\n    'count': 3,\n    'items': [{'id': '218201586',\n      'firstName': 'Susan',\n      'lastName': 'R',\n      'photo': {'prefix': 'https://fastly.4sqi.net/img/user/',\n       'suffix': '/218201586-ABULA3AS5QLNAPYL.jpg'}},\n     {'id': '133690',\n      'firstName': 'Mike',\n      'lastName': 'D',\n      'photo': {'prefix': 'https://fastly.4sqi.net/img/user/',\n       'suffix': '/XGM1ZZXR0VSNAHQK.jpg'}},\n     {'id': '16208261',\n      'firstName': 'DavieG',\n      'lastName': 'G',\n      'photo': {'prefix': 'https://fastly.4sqi.net/img/user/',\n       'suffix': '/0VDLVO31NXGGJLGU.jpg'}}]}],\n  'summary': '3 Likes'},\n 'dislike': False,\n 'ok': False,\n 'allowMenuUrlEdit': True,\n 'beenHere': {'count': 0,\n  'unconfirmedCount': 0,\n  'marked': False,\n  'lastCheckinExpiredAt': 0},\n 'specials': {'count': 0, 'items': []},\n 'photos': {'count': 11,\n  'groups': [{'type': 'venue',\n    'name': 'Venue photos',\n    'count': 11,\n    'items': [{'id': '5e513fc735835a00089cc3bc',\n      'createdAt': 1582383047,\n      'source': {'name': 'Swarm for iOS', 'url': 'https://www.swarmapp.com'},\n      'prefix': 'https://fastly.4sqi.net/img/general/',\n      'suffix': '/1628418_fjl5MEx2G42Ex3oQoay64dzrSGG_l5CextpcCsZUPPY.jpg',\n      'width': 1440,\n      'height': 1920,\n      'user': {'id': '1628418',\n       'firstName': 'Chris',\n       'photo': {'prefix': 'https://fastly.4sqi.net/img/user/',\n        'suffix': '/0ZIZB3P4O0HTTGIZ.jpg'}},\n      'visibility': 'public'}]}]},\n 'reasons': {'count': 0, 'items': []},\n 'description': 'Right now only on Thursdays',\n 'hereNow': {'count': 0, 'summary': 'Nobody here', 'groups': []},\n 'createdAt': 1443717352,\n 'tips': {'count': 4,\n  'groups': [{'type': 'others',\n    'name': 'All tips',\n    'count': 4,\n    'items': [{'id': '56294243498e708d1a86f9a3',\n      'createdAt': 1445544515,\n      'text': 'These are the best ribs in town!',\n      'type': 'user',\n      'canonicalUrl': 'https://foursquare.com/item/56294243498e708d1a86f9a3',\n      'photo': {'id': '56294244498ea1203fdcd503',\n       'createdAt': 1445544516,\n       'source': {'name': 'Foursquare for iOS',\n        'url': 'https://foursquare.com/download/#/iphone'},\n       'prefix': 'https://fastly.4sqi.net/img/general/',\n       'suffix': '/133690_-nt1jOQDy7ejp4SexKphakc5rtH5sJU8Nm9oTDYEwSw.jpg',\n       'width': 1920,\n       'height': 1439,\n       'visibility': 'public'},\n      'photourl': 'https://fastly.4sqi.net/img/general/original/133690_-nt1jOQDy7ejp4SexKphakc5rtH5sJU8Nm9oTDYEwSw.jpg',\n      'lang': 'en',\n      'likes': {'count': 1,\n       'groups': [{'type': 'others',\n         'count': 1,\n         'items': [{'id': '16208261',\n           'firstName': 'DavieG',\n           'lastName': 'G',\n           'photo': {'prefix': 'https://fastly.4sqi.net/img/user/',\n            'suffix': '/0VDLVO31NXGGJLGU.jpg'}}]}],\n       'summary': '1 like'},\n      'logView': True,\n      'agreeCount': 1,\n      'disagreeCount': 0,\n      'todo': {'count': 0},\n      'user': {'id': '133690',\n       'firstName': 'Mike',\n       'lastName': 'D',\n       'photo': {'prefix': 'https://fastly.4sqi.net/img/user/',\n        'suffix': '/XGM1ZZXR0VSNAHQK.jpg'}},\n      'authorInteractionType': 'liked'}]}]},\n 'shortUrl': 'http://4sq.com/1Gl8zIA',\n 'timeZone': 'America/Chicago',\n 'listed': {'count': 1,\n  'groups': [{'type': 'others',\n    'name': 'Lists from other people',\n    'count': 1,\n    'items': [{'id': '5b79eb386a5950002c7da04f',\n      'name': 'Waco, TX',\n      'description': '',\n      'type': 'others',\n      'user': {'id': '164858310',\n       'firstName': 'Steffi',\n       'lastName': 'V',\n       'photo': {'prefix': 'https://fastly.4sqi.net/img/user/',\n        'suffix': '/164858310-TBZTRYRWZMOWLTVJ.jpg'}},\n      'editable': False,\n      'public': True,\n      'collaborative': False,\n      'url': '/user/164858310/list/waco-tx',\n      'canonicalUrl': 'https://foursquare.com/user/164858310/list/waco-tx',\n      'createdAt': 1534716728,\n      'updatedAt': 1592019740,\n      'photo': {'id': '51473344e4b039104661bc13',\n       'createdAt': 1363620676,\n       'prefix': 'https://fastly.4sqi.net/img/general/',\n       'suffix': '/7377096_AYVv2BFfNN3baGGgAjmoRSkb5MYSI7Zsv7wSxCza4Ns.jpg',\n       'width': 720,\n       'height': 960,\n       'user': {'id': '7377096',\n        'firstName': 'Matt',\n        'lastName': 'M',\n        'photo': {'prefix': 'https://fastly.4sqi.net/img/user/',\n         'suffix': '/HGYMDSMDUCIHCE2F.jpg'}},\n       'visibility': 'public'},\n      'followers': {'count': 0},\n      'listItems': {'count': 193,\n       'items': [{'id': 'v560d60e8498ed394e9de762e',\n         'createdAt': 1548729406}]}}]}]},\n 'hours': {'status': 'Closed until 11:00 AM Thursday',\n  'richStatus': {'entities': [], 'text': 'Closed until 11:00 AM Thursday'},\n  'isOpen': False,\n  'isLocalHoliday': False,\n  'dayData': [],\n  'timeframes': [{'days': 'Thu\u2013Fri',\n    'open': [{'renderedTime': '11:00 AM\u20132:00 PM'}],\n    'segments': []},\n   {'days': 'Sat',\n    'open': [{'renderedTime': '11:00 AM\u20134:00 PM'}],\n    'segments': []}]},\n 'seasonalHours': [],\n 'defaultHours': {'status': 'Closed until 11:00 AM Thursday',\n  'richStatus': {'entities': [], 'text': 'Closed until 11:00 AM Thursday'},\n  'isOpen': False,\n  'isLocalHoliday': False,\n  'dayData': [],\n  'timeframes': [{'days': 'Thu\u2013Fri',\n    'open': [{'renderedTime': '11:00 AM\u20132:00 PM'}],\n    'segments': []},\n   {'days': 'Sat',\n    'open': [{'renderedTime': '11:00 AM\u20134:00 PM'}],\n    'segments': []}]},\n 'pageUpdates': {'count': 0, 'items': []},\n 'inbox': {'count': 0, 'items': []},\n 'attributes': {'groups': [{'type': 'price',\n    'name': 'Price',\n    'summary': '$$',\n    'count': 1,\n    'items': [{'displayName': 'Price', 'displayValue': '$$', 'priceTier': 2}]},\n   {'type': 'payments',\n    'name': 'Credit Cards',\n    'summary': 'Credit Cards',\n    'count': 7,\n    'items': [{'displayName': 'Credit Cards', 'displayValue': 'Yes'}]},\n   {'type': 'outdoorSeating',\n    'name': 'Outdoor Seating',\n    'count': 1,\n    'items': [{'displayName': 'Outdoor Seating', 'displayValue': 'No'}]},\n   {'type': 'serves',\n    'name': 'Menus',\n    'summary': 'Lunch',\n    'count': 8,\n    'items': [{'displayName': 'Lunch', 'displayValue': 'Lunch'}]},\n   {'type': 'parking',\n    'name': 'Parking',\n    'summary': 'Public Lot',\n    'count': 5,\n    'items': [{'displayName': 'Public Lot', 'displayValue': 'Public Lot'}]},\n   {'type': 'atm',\n    'name': 'ATM',\n    'summary': 'ATM',\n    'count': 1,\n    'items': [{'displayName': 'ATM', 'displayValue': 'Yes'}]}]},\n 'bestPhoto': {'id': '5e513fc735835a00089cc3bc',\n  'createdAt': 1582383047,\n  'source': {'name': 'Swarm for iOS', 'url': 'https://www.swarmapp.com'},\n  'prefix': 'https://fastly.4sqi.net/img/general/',\n  'suffix': '/1628418_fjl5MEx2G42Ex3oQoay64dzrSGG_l5CextpcCsZUPPY.jpg',\n  'width': 1440,\n  'height': 1920,\n  'visibility': 'public'}}"
+                    },
+                    "execution_count": 14,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "result = requests.get(url).json()\nprint(result['response']['venue'].keys())\nresult['response']['venue']"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 15,
+            "metadata": {},
+            "outputs": [
+                {
+                    "name": "stdout",
+                    "output_type": "stream",
+                    "text": "This venue has not been rated yet.\n"
+                }
+            ],
+            "source": "try:\n    print(result['response']['venue']['rating'])\nexcept:\n    print('This venue has not been rated yet.')"
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### Get number of tips."
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 16,
+            "metadata": {},
+            "outputs": [
+                {
+                    "data": {
+                        "text/plain": "4"
+                    },
+                    "execution_count": 16,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "result['response']['venue']['tips']['count']"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 17,
+            "metadata": {},
+            "outputs": [
+                {
+                    "data": {
+                        "text/plain": "'https://api.foursquare.com/v2/venues/560d60e8498ed394e9de762e/tips?client_id=DPR2TRJDTRBYCTN4YIRLNJ4F3GRM3IHAWXWCB4MQGXDU2H5E&client_secret=ZVGOPN1OCEFCGB5RDDUQXBGE11AXDT2OHB0VNGFUAZUO3COZ&v=20200713&limit=15'"
+                    },
+                    "execution_count": 17,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "limit = 15\nurl = 'https://api.foursquare.com/v2/venues/{}/tips?client_id={}&client_secret={}&v={}&limit={}'.format(venue_id, CLIENT_ID, CLIENT_SECRET, VERSION,limit)\nurl"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 18,
+            "metadata": {},
+            "outputs": [
+                {
+                    "data": {
+                        "text/plain": "{'meta': {'code': 200, 'requestId': '5f0c74e939be673584fe3c23'},\n 'response': {'tips': {'count': 4,\n   'items': [{'id': '58cc3d39c0c89b181c80675f',\n     'createdAt': 1489780025,\n     'text': 'Tasty brisket, tender pork, delicious ribs...',\n     'type': 'user',\n     'canonicalUrl': 'https://foursquare.com/item/58cc3d39c0c89b181c80675f',\n     'lang': 'en',\n     'likes': {'count': 0, 'groups': []},\n     'logView': True,\n     'agreeCount': 3,\n     'disagreeCount': 0,\n     'todo': {'count': 0},\n     'user': {'id': '133690',\n      'firstName': 'Mike',\n      'lastName': 'D',\n      'photo': {'prefix': 'https://fastly.4sqi.net/img/user/',\n       'suffix': '/XGM1ZZXR0VSNAHQK.jpg'}},\n     'authorInteractionType': 'liked'}]}}}"
+                    },
+                    "execution_count": 18,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "results = requests.get(url).json()\nresults"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 19,
+            "metadata": {},
+            "outputs": [
+                {
+                    "data": {
+                        "text/plain": "dict_keys(['id', 'createdAt', 'text', 'type', 'canonicalUrl', 'lang', 'likes', 'logView', 'agreeCount', 'disagreeCount', 'todo', 'user', 'authorInteractionType'])"
+                    },
+                    "execution_count": 19,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "tips = results['response']['tips']['items']\n\ntip = results['response']['tips']['items'][0]\ntip.keys()"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 20,
+            "metadata": {},
+            "outputs": [
+                {
+                    "name": "stderr",
+                    "output_type": "stream",
+                    "text": "/opt/conda/envs/Python36/lib/python3.6/site-packages/pandas/core/indexing.py:1494: FutureWarning: \nPassing list-likes to .loc or [] with any missing label will raise\nKeyError in the future, you can use .reindex() as an alternative.\n\nSee the documentation here:\nhttps://pandas.pydata.org/pandas-docs/stable/indexing.html#deprecate-loc-reindex-listlike\n  return self._getitem_tuple(key)\n"
+                },
+                {
+                    "data": {
+                        "text/html": "<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>text</th>\n      <th>agreeCount</th>\n      <th>disagreeCount</th>\n      <th>id</th>\n      <th>user.firstName</th>\n      <th>user.lastName</th>\n      <th>user.gender</th>\n      <th>user.id</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>Tasty brisket, tender pork, delicious ribs...</td>\n      <td>3</td>\n      <td>0</td>\n      <td>58cc3d39c0c89b181c80675f</td>\n      <td>Mike</td>\n      <td>D</td>\n      <td>NaN</td>\n      <td>133690</td>\n    </tr>\n  </tbody>\n</table>\n</div>",
+                        "text/plain": "                                            text  agreeCount  disagreeCount  \\\n0  Tasty brisket, tender pork, delicious ribs...  3           0               \n\n                         id user.firstName user.lastName  user.gender user.id  \n0  58cc3d39c0c89b181c80675f  Mike           D            NaN           133690  "
+                    },
+                    "execution_count": 20,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "pd.set_option('display.max_colwidth', -1)\n\ntips_df = json_normalize(tips)\n\nfiltered_columns = ['text', 'agreeCount', 'disagreeCount', 'id', 'user.firstName', 'user.lastName', 'user.gender', 'user.id']\ntips_filtered = tips_df.loc[:, filtered_columns]\n\ntips_filtered"
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### Second search for 'Barbeque' in Downtown Waco."
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 21,
+            "metadata": {
+                "scrolled": true
+            },
+            "outputs": [
+                {
+                    "name": "stdout",
+                    "output_type": "stream",
+                    "text": "barbeque.... OK!\n"
+                }
+            ],
+            "source": "search_query = 'barbeque'\nradius = 500\nprint(search_query + '.... OK!')"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 22,
+            "metadata": {},
+            "outputs": [
+                {
+                    "data": {
+                        "text/plain": "'https://api.foursquare.com/v2/venues/search?client_id=DPR2TRJDTRBYCTN4YIRLNJ4F3GRM3IHAWXWCB4MQGXDU2H5E&client_secret=ZVGOPN1OCEFCGB5RDDUQXBGE11AXDT2OHB0VNGFUAZUO3COZ&ll=31.555734857142856,-97.13097791836735&v=20200713&query=barbeque&radius=500&limit=30'"
+                    },
+                    "execution_count": 22,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "url = 'https://api.foursquare.com/v2/venues/search?client_id={}&client_secret={}&ll={},{}&v={}&query={}&radius={}&limit={}'.format(CLIENT_ID, CLIENT_SECRET, latitude, longitude, VERSION, search_query, radius, LIMIT)\nurl"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 23,
+            "metadata": {
+                "scrolled": true
+            },
+            "outputs": [
+                {
+                    "data": {
+                        "text/plain": "{'meta': {'code': 200, 'requestId': '5f0c7575cedc4c5633eed78d'},\n 'response': {'venues': [{'id': '587a693e15fb436da137bce7',\n    'name': 'Guess Family Barbeque',\n    'location': {'address': '325 S 6th',\n     'lat': 31.553531,\n     'lng': -97.130228,\n     'labeledLatLngs': [{'label': 'display',\n       'lat': 31.553531,\n       'lng': -97.130228}],\n     'distance': 255,\n     'postalCode': '76701',\n     'cc': 'US',\n     'city': 'Waco',\n     'state': 'TX',\n     'country': 'United States',\n     'formattedAddress': ['325 S 6th', 'Waco, TX 76701', 'United States']},\n    'categories': [{'id': '4bf58dd8d48988d1df931735',\n      'name': 'BBQ Joint',\n      'pluralName': 'BBQ Joints',\n      'shortName': 'BBQ',\n      'icon': {'prefix': 'https://ss3.4sqi.net/img/categories_v2/food/bbqalt_',\n       'suffix': '.png'},\n      'primary': True}],\n    'referralId': 'v-1594652054',\n    'hasPerk': False}]}}"
+                    },
+                    "execution_count": 23,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "results = requests.get(url).json()\nresults"
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### Get relevant part of JSON file and transform into pandas dataframe. "
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 24,
+            "metadata": {},
+            "outputs": [],
+            "source": "venues = results['response']['venues']"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 25,
+            "metadata": {
+                "scrolled": true
+            },
+            "outputs": [
+                {
+                    "data": {
+                        "text/html": "<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>categories</th>\n      <th>hasPerk</th>\n      <th>id</th>\n      <th>location.address</th>\n      <th>location.cc</th>\n      <th>location.city</th>\n      <th>location.country</th>\n      <th>location.distance</th>\n      <th>location.formattedAddress</th>\n      <th>location.labeledLatLngs</th>\n      <th>location.lat</th>\n      <th>location.lng</th>\n      <th>location.postalCode</th>\n      <th>location.state</th>\n      <th>name</th>\n      <th>referralId</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>[{'id': '4bf58dd8d48988d1df931735', 'name': 'BBQ Joint', 'pluralName': 'BBQ Joints', 'shortName': 'BBQ', 'icon': {'prefix': 'https://ss3.4sqi.net/img/categories_v2/food/bbqalt_', 'suffix': '.png'}, 'primary': True}]</td>\n      <td>False</td>\n      <td>587a693e15fb436da137bce7</td>\n      <td>325 S 6th</td>\n      <td>US</td>\n      <td>Waco</td>\n      <td>United States</td>\n      <td>255</td>\n      <td>[325 S 6th, Waco, TX 76701, United States]</td>\n      <td>[{'label': 'display', 'lat': 31.553531, 'lng': -97.130228}]</td>\n      <td>31.553531</td>\n      <td>-97.130228</td>\n      <td>76701</td>\n      <td>TX</td>\n      <td>Guess Family Barbeque</td>\n      <td>v-1594652054</td>\n    </tr>\n  </tbody>\n</table>\n</div>",
+                        "text/plain": "                                                                                                                                                                                                                categories  \\\n0  [{'id': '4bf58dd8d48988d1df931735', 'name': 'BBQ Joint', 'pluralName': 'BBQ Joints', 'shortName': 'BBQ', 'icon': {'prefix': 'https://ss3.4sqi.net/img/categories_v2/food/bbqalt_', 'suffix': '.png'}, 'primary': True}]   \n\n   hasPerk                        id location.address location.cc  \\\n0  False    587a693e15fb436da137bce7  325 S 6th        US           \n\n  location.city location.country  location.distance  \\\n0  Waco          United States    255                 \n\n                    location.formattedAddress  \\\n0  [325 S 6th, Waco, TX 76701, United States]   \n\n                                       location.labeledLatLngs  location.lat  \\\n0  [{'label': 'display', 'lat': 31.553531, 'lng': -97.130228}]  31.553531      \n\n   location.lng location.postalCode location.state                   name  \\\n0 -97.130228     76701               TX             Guess Family Barbeque   \n\n     referralId  \n0  v-1594652054  "
+                    },
+                    "execution_count": 25,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "dataframe = json_normalize(venues)\ndataframe.head()"
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### Define information of interest."
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 26,
+            "metadata": {
+                "scrolled": true
+            },
+            "outputs": [
+                {
+                    "data": {
+                        "text/html": "<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>name</th>\n      <th>categories</th>\n      <th>address</th>\n      <th>cc</th>\n      <th>city</th>\n      <th>country</th>\n      <th>distance</th>\n      <th>formattedAddress</th>\n      <th>labeledLatLngs</th>\n      <th>lat</th>\n      <th>lng</th>\n      <th>postalCode</th>\n      <th>state</th>\n      <th>id</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>Guess Family Barbeque</td>\n      <td>BBQ Joint</td>\n      <td>325 S 6th</td>\n      <td>US</td>\n      <td>Waco</td>\n      <td>United States</td>\n      <td>255</td>\n      <td>[325 S 6th, Waco, TX 76701, United States]</td>\n      <td>[{'label': 'display', 'lat': 31.553531, 'lng': -97.130228}]</td>\n      <td>31.553531</td>\n      <td>-97.130228</td>\n      <td>76701</td>\n      <td>TX</td>\n      <td>587a693e15fb436da137bce7</td>\n    </tr>\n  </tbody>\n</table>\n</div>",
+                        "text/plain": "                    name categories    address  cc  city        country  \\\n0  Guess Family Barbeque  BBQ Joint  325 S 6th  US  Waco  United States   \n\n   distance                            formattedAddress  \\\n0  255       [325 S 6th, Waco, TX 76701, United States]   \n\n                                                labeledLatLngs        lat  \\\n0  [{'label': 'display', 'lat': 31.553531, 'lng': -97.130228}]  31.553531   \n\n         lng postalCode state                        id  \n0 -97.130228  76701      TX    587a693e15fb436da137bce7  "
+                    },
+                    "execution_count": 26,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "filtered_columns = ['name', 'categories'] + [col for col in dataframe.columns if col.startswith('location.')] + ['id']\ndataframe_filtered = dataframe.loc[:, filtered_columns]\n\ndef get_category_type(row):\n    try:\n        categories_list = row['categories']\n    except:\n        categories_list = row['venue.categories']\n    \n    if len(categories_list) == 0:\n        return None\n    else:\n        return categories_list[0]['name']\n\ndataframe_filtered['categories'] = dataframe_filtered.apply(get_category_type, axis=1)\n\ndataframe_filtered.columns = [column.split('.')[-1] for column in dataframe_filtered.columns]\n\ndataframe_filtered"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 27,
+            "metadata": {},
+            "outputs": [
+                {
+                    "data": {
+                        "text/plain": "0    Guess Family Barbeque\nName: name, dtype: object"
+                    },
+                    "execution_count": 27,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "dataframe_filtered.name"
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### Location of \"Guess Family Barbeque\" in proximity to the Downtown location. "
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 28,
+            "metadata": {
+                "scrolled": true
+            },
+            "outputs": [
+                {
+                    "data": {
+                        "text/html": "<div style=\"width:100%;\"><div style=\"position:relative;width:100%;height:0;padding-bottom:60%;\"><span style=\"color:#565656\">Make this Notebook Trusted to load map: File -> Trust Notebook</span><iframe src=\"about:blank\" style=\"position:absolute;width:100%;height:100%;left:0;top:0;border:none !important;\" data-html=PCFET0NUWVBFIGh0bWw+CjxoZWFkPiAgICAKICAgIDxtZXRhIGh0dHAtZXF1aXY9ImNvbnRlbnQtdHlwZSIgY29udGVudD0idGV4dC9odG1sOyBjaGFyc2V0PVVURi04IiAvPgogICAgPHNjcmlwdD5MX1BSRUZFUl9DQU5WQVMgPSBmYWxzZTsgTF9OT19UT1VDSCA9IGZhbHNlOyBMX0RJU0FCTEVfM0QgPSBmYWxzZTs8L3NjcmlwdD4KICAgIDxzY3JpcHQgc3JjPSJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvbnBtL2xlYWZsZXRAMS4yLjAvZGlzdC9sZWFmbGV0LmpzIj48L3NjcmlwdD4KICAgIDxzY3JpcHQgc3JjPSJodHRwczovL2FqYXguZ29vZ2xlYXBpcy5jb20vYWpheC9saWJzL2pxdWVyeS8xLjExLjEvanF1ZXJ5Lm1pbi5qcyI+PC9zY3JpcHQ+CiAgICA8c2NyaXB0IHNyYz0iaHR0cHM6Ly9tYXhjZG4uYm9vdHN0cmFwY2RuLmNvbS9ib290c3RyYXAvMy4yLjAvanMvYm9vdHN0cmFwLm1pbi5qcyI+PC9zY3JpcHQ+CiAgICA8c2NyaXB0IHNyYz0iaHR0cHM6Ly9jZG5qcy5jbG91ZGZsYXJlLmNvbS9hamF4L2xpYnMvTGVhZmxldC5hd2Vzb21lLW1hcmtlcnMvMi4wLjIvbGVhZmxldC5hd2Vzb21lLW1hcmtlcnMuanMiPjwvc2NyaXB0PgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvbnBtL2xlYWZsZXRAMS4yLjAvZGlzdC9sZWFmbGV0LmNzcyIvPgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL21heGNkbi5ib290c3RyYXBjZG4uY29tL2Jvb3RzdHJhcC8zLjIuMC9jc3MvYm9vdHN0cmFwLm1pbi5jc3MiLz4KICAgIDxsaW5rIHJlbD0ic3R5bGVzaGVldCIgaHJlZj0iaHR0cHM6Ly9tYXhjZG4uYm9vdHN0cmFwY2RuLmNvbS9ib290c3RyYXAvMy4yLjAvY3NzL2Jvb3RzdHJhcC10aGVtZS5taW4uY3NzIi8+CiAgICA8bGluayByZWw9InN0eWxlc2hlZXQiIGhyZWY9Imh0dHBzOi8vbWF4Y2RuLmJvb3RzdHJhcGNkbi5jb20vZm9udC1hd2Vzb21lLzQuNi4zL2Nzcy9mb250LWF3ZXNvbWUubWluLmNzcyIvPgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL2NkbmpzLmNsb3VkZmxhcmUuY29tL2FqYXgvbGlicy9MZWFmbGV0LmF3ZXNvbWUtbWFya2Vycy8yLjAuMi9sZWFmbGV0LmF3ZXNvbWUtbWFya2Vycy5jc3MiLz4KICAgIDxsaW5rIHJlbD0ic3R5bGVzaGVldCIgaHJlZj0iaHR0cHM6Ly9yYXdnaXQuY29tL3B5dGhvbi12aXN1YWxpemF0aW9uL2ZvbGl1bS9tYXN0ZXIvZm9saXVtL3RlbXBsYXRlcy9sZWFmbGV0LmF3ZXNvbWUucm90YXRlLmNzcyIvPgogICAgPHN0eWxlPmh0bWwsIGJvZHkge3dpZHRoOiAxMDAlO2hlaWdodDogMTAwJTttYXJnaW46IDA7cGFkZGluZzogMDt9PC9zdHlsZT4KICAgIDxzdHlsZT4jbWFwIHtwb3NpdGlvbjphYnNvbHV0ZTt0b3A6MDtib3R0b206MDtyaWdodDowO2xlZnQ6MDt9PC9zdHlsZT4KICAgIAogICAgICAgICAgICA8c3R5bGU+ICNtYXBfZTFkODNjOTUyYTY4NGU5MmI5NWQxYmI3YjJkN2JhNDIgewogICAgICAgICAgICAgICAgcG9zaXRpb24gOiByZWxhdGl2ZTsKICAgICAgICAgICAgICAgIHdpZHRoIDogMTAwLjAlOwogICAgICAgICAgICAgICAgaGVpZ2h0OiAxMDAuMCU7CiAgICAgICAgICAgICAgICBsZWZ0OiAwLjAlOwogICAgICAgICAgICAgICAgdG9wOiAwLjAlOwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICA8L3N0eWxlPgogICAgICAgIAo8L2hlYWQ+Cjxib2R5PiAgICAKICAgIAogICAgICAgICAgICA8ZGl2IGNsYXNzPSJmb2xpdW0tbWFwIiBpZD0ibWFwX2UxZDgzYzk1MmE2ODRlOTJiOTVkMWJiN2IyZDdiYTQyIiA+PC9kaXY+CiAgICAgICAgCjwvYm9keT4KPHNjcmlwdD4gICAgCiAgICAKCiAgICAgICAgICAgIAogICAgICAgICAgICAgICAgdmFyIGJvdW5kcyA9IG51bGw7CiAgICAgICAgICAgIAoKICAgICAgICAgICAgdmFyIG1hcF9lMWQ4M2M5NTJhNjg0ZTkyYjk1ZDFiYjdiMmQ3YmE0MiA9IEwubWFwKAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgJ21hcF9lMWQ4M2M5NTJhNjg0ZTkyYjk1ZDFiYjdiMmQ3YmE0MicsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB7Y2VudGVyOiBbMzEuNTU1NzM0ODU3MTQyODU2LC05Ny4xMzA5Nzc5MTgzNjczNV0sCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB6b29tOiAxNCwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIG1heEJvdW5kczogYm91bmRzLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgbGF5ZXJzOiBbXSwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHdvcmxkQ29weUp1bXA6IGZhbHNlLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgY3JzOiBMLkNSUy5FUFNHMzg1NwogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB9KTsKICAgICAgICAgICAgCiAgICAgICAgCiAgICAKICAgICAgICAgICAgdmFyIHRpbGVfbGF5ZXJfZjg4MzU1N2U4YjUxNDI2NGI5NGMxOWVlZmU4ZGIwNjEgPSBMLnRpbGVMYXllcigKICAgICAgICAgICAgICAgICdodHRwczovL3tzfS50aWxlLm9wZW5zdHJlZXRtYXAub3JnL3t6fS97eH0ve3l9LnBuZycsCiAgICAgICAgICAgICAgICB7CiAgImF0dHJpYnV0aW9uIjogbnVsbCwKICAiZGV0ZWN0UmV0aW5hIjogZmFsc2UsCiAgIm1heFpvb20iOiAxOCwKICAibWluWm9vbSI6IDEsCiAgIm5vV3JhcCI6IGZhbHNlLAogICJzdWJkb21haW5zIjogImFiYyIKfQogICAgICAgICAgICAgICAgKS5hZGRUbyhtYXBfZTFkODNjOTUyYTY4NGU5MmI5NWQxYmI3YjJkN2JhNDIpOwogICAgICAgIAogICAgCiAgICAgICAgICAgIHZhciBjaXJjbGVfbWFya2VyX2U4NGIzY2IxZTg3YTQ3MTQ5OTQyMzQ1MmVkNDg1OGVmID0gTC5jaXJjbGVNYXJrZXIoCiAgICAgICAgICAgICAgICBbMzEuNTU1NzM0ODU3MTQyODU2LC05Ny4xMzA5Nzc5MTgzNjczNV0sCiAgICAgICAgICAgICAgICB7CiAgImJ1YmJsaW5nTW91c2VFdmVudHMiOiB0cnVlLAogICJjb2xvciI6ICJyZWQiLAogICJkYXNoQXJyYXkiOiBudWxsLAogICJkYXNoT2Zmc2V0IjogbnVsbCwKICAiZmlsbCI6IHRydWUsCiAgImZpbGxDb2xvciI6ICJyZWQiLAogICJmaWxsT3BhY2l0eSI6IDAuNiwKICAiZmlsbFJ1bGUiOiAiZXZlbm9kZCIsCiAgImxpbmVDYXAiOiAicm91bmQiLAogICJsaW5lSm9pbiI6ICJyb3VuZCIsCiAgIm9wYWNpdHkiOiAxLjAsCiAgInJhZGl1cyI6IDEwLAogICJzdHJva2UiOiB0cnVlLAogICJ3ZWlnaHQiOiAzCn0KICAgICAgICAgICAgICAgICkuYWRkVG8obWFwX2UxZDgzYzk1MmE2ODRlOTJiOTVkMWJiN2IyZDdiYTQyKTsKICAgICAgICAgICAgCiAgICAKICAgICAgICAgICAgdmFyIHBvcHVwXzAyZjYwNTI1YmRkMjQ1NDBiZDA4ZmUzYjkzNWQ4ZDRlID0gTC5wb3B1cCh7bWF4V2lkdGg6ICczMDAnfSk7CgogICAgICAgICAgICAKICAgICAgICAgICAgICAgIHZhciBodG1sXzFhN2FiMTZlNGIzNzQ3NzZiMjNmZjRkYzdlYmEwOWVkID0gJCgnPGRpdiBpZD0iaHRtbF8xYTdhYjE2ZTRiMzc0Nzc2YjIzZmY0ZGM3ZWJhMDllZCIgc3R5bGU9IndpZHRoOiAxMDAuMCU7IGhlaWdodDogMTAwLjAlOyI+RG93bnRvd24gV2FjbyBMb2NhdGlvbjwvZGl2PicpWzBdOwogICAgICAgICAgICAgICAgcG9wdXBfMDJmNjA1MjViZGQyNDU0MGJkMDhmZTNiOTM1ZDhkNGUuc2V0Q29udGVudChodG1sXzFhN2FiMTZlNGIzNzQ3NzZiMjNmZjRkYzdlYmEwOWVkKTsKICAgICAgICAgICAgCgogICAgICAgICAgICBjaXJjbGVfbWFya2VyX2U4NGIzY2IxZTg3YTQ3MTQ5OTQyMzQ1MmVkNDg1OGVmLmJpbmRQb3B1cChwb3B1cF8wMmY2MDUyNWJkZDI0NTQwYmQwOGZlM2I5MzVkOGQ0ZSk7CgogICAgICAgICAgICAKICAgICAgICAKICAgIAogICAgICAgICAgICB2YXIgY2lyY2xlX21hcmtlcl83OTBhYzY0MDhiNzE0NmM2ODI0ODRkYjBmYTBiM2IwZiA9IEwuY2lyY2xlTWFya2VyKAogICAgICAgICAgICAgICAgWzMxLjU1MzUzMSwtOTcuMTMwMjI4XSwKICAgICAgICAgICAgICAgIHsKICAiYnViYmxpbmdNb3VzZUV2ZW50cyI6IHRydWUsCiAgImNvbG9yIjogImJsdWUiLAogICJkYXNoQXJyYXkiOiBudWxsLAogICJkYXNoT2Zmc2V0IjogbnVsbCwKICAiZmlsbCI6IHRydWUsCiAgImZpbGxDb2xvciI6ICJibHVlIiwKICAiZmlsbE9wYWNpdHkiOiAwLjYsCiAgImZpbGxSdWxlIjogImV2ZW5vZGQiLAogICJsaW5lQ2FwIjogInJvdW5kIiwKICAibGluZUpvaW4iOiAicm91bmQiLAogICJvcGFjaXR5IjogMS4wLAogICJyYWRpdXMiOiA1LAogICJzdHJva2UiOiB0cnVlLAogICJ3ZWlnaHQiOiAzCn0KICAgICAgICAgICAgICAgICkuYWRkVG8obWFwX2UxZDgzYzk1MmE2ODRlOTJiOTVkMWJiN2IyZDdiYTQyKTsKICAgICAgICAgICAgCiAgICAKICAgICAgICAgICAgdmFyIHBvcHVwXzBmZGMzMTEzMTc0MzRlZDRiYmQ0N2ZhMTZkOTEzMzY5ID0gTC5wb3B1cCh7bWF4V2lkdGg6ICczMDAnfSk7CgogICAgICAgICAgICAKICAgICAgICAgICAgICAgIHZhciBodG1sX2RlZDdlMGRmMTQ2YTRmMmU4YzU0Y2MzZTlkZWJjY2EyID0gJCgnPGRpdiBpZD0iaHRtbF9kZWQ3ZTBkZjE0NmE0ZjJlOGM1NGNjM2U5ZGViY2NhMiIgc3R5bGU9IndpZHRoOiAxMDAuMCU7IGhlaWdodDogMTAwLjAlOyI+QkJRIEpvaW50PC9kaXY+JylbMF07CiAgICAgICAgICAgICAgICBwb3B1cF8wZmRjMzExMzE3NDM0ZWQ0YmJkNDdmYTE2ZDkxMzM2OS5zZXRDb250ZW50KGh0bWxfZGVkN2UwZGYxNDZhNGYyZThjNTRjYzNlOWRlYmNjYTIpOwogICAgICAgICAgICAKCiAgICAgICAgICAgIGNpcmNsZV9tYXJrZXJfNzkwYWM2NDA4YjcxNDZjNjgyNDg0ZGIwZmEwYjNiMGYuYmluZFBvcHVwKHBvcHVwXzBmZGMzMTEzMTc0MzRlZDRiYmQ0N2ZhMTZkOTEzMzY5KTsKCiAgICAgICAgICAgIAogICAgICAgIAo8L3NjcmlwdD4= onload=\"this.contentDocument.open();this.contentDocument.write(atob(this.getAttribute('data-html')));this.contentDocument.close();\" allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe></div></div>",
+                        "text/plain": "<folium.folium.Map at 0x7f52ddeb9cc0>"
+                    },
+                    "execution_count": 28,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "map_waco = folium.Map(location=[latitude, longitude], zoom_start=14)\n\nfolium.features.CircleMarker(\n    [latitude, longitude],\n    radius=10,\n    color='red',\n    popup='Downtown Waco Location',\n    fill = True,\n    fill_color = 'red',\n    fill_opacity = 0.6\n).add_to(map_waco)\n\n\nfor lat, lng, label in zip(dataframe_filtered.lat, dataframe_filtered.lng, dataframe_filtered.categories):\n    folium.features.CircleMarker(\n    [lat, lng],\n    radius=5,\n    color='blue',\n    popup=label,\n    fill = True,\n    fill_color='blue',\n    fill_opacity=0.6\n    ).add_to(map_waco)\n    \n    \nmap_waco"
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### Let's explore \"Guess Family Barbeque\"."
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 29,
+            "metadata": {},
+            "outputs": [
+                {
+                    "data": {
+                        "text/plain": "'https://api.foursquare.com/v2/venues/587a693e15fb436da137bce7?client_id=DPR2TRJDTRBYCTN4YIRLNJ4F3GRM3IHAWXWCB4MQGXDU2H5E&client_secret=ZVGOPN1OCEFCGB5RDDUQXBGE11AXDT2OHB0VNGFUAZUO3COZ&v=20200713'"
+                    },
+                    "execution_count": 29,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "venue_id = '587a693e15fb436da137bce7'\nurl = 'https://api.foursquare.com/v2/venues/{}?client_id={}&client_secret={}&v={}'.format(venue_id, CLIENT_ID, CLIENT_SECRET, VERSION)\nurl"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 30,
+            "metadata": {},
+            "outputs": [
+                {
+                    "name": "stdout",
+                    "output_type": "stream",
+                    "text": "dict_keys(['id', 'name', 'contact', 'location', 'canonicalUrl', 'categories', 'verified', 'stats', 'url', 'price', 'likes', 'dislike', 'ok', 'allowMenuUrlEdit', 'beenHere', 'specials', 'photos', 'reasons', 'hereNow', 'createdAt', 'tips', 'shortUrl', 'timeZone', 'listed', 'hours', 'seasonalHours', 'defaultHours', 'pageUpdates', 'inbox', 'attributes', 'bestPhoto'])\n"
+                },
+                {
+                    "data": {
+                        "text/plain": "{'id': '587a693e15fb436da137bce7',\n 'name': 'Guess Family Barbeque',\n 'contact': {'phone': '2543017996',\n  'formattedPhone': '(254) 301-7996',\n  'twitter': 'guessfamilybbq'},\n 'location': {'address': '325 S 6th',\n  'lat': 31.553531,\n  'lng': -97.130228,\n  'labeledLatLngs': [{'label': 'display',\n    'lat': 31.553531,\n    'lng': -97.130228}],\n  'postalCode': '76701',\n  'cc': 'US',\n  'city': 'Waco',\n  'state': 'TX',\n  'country': 'United States',\n  'formattedAddress': ['325 S 6th', 'Waco, TX 76701', 'United States']},\n 'canonicalUrl': 'https://foursquare.com/v/guess-family-barbeque/587a693e15fb436da137bce7',\n 'categories': [{'id': '4bf58dd8d48988d1df931735',\n   'name': 'BBQ Joint',\n   'pluralName': 'BBQ Joints',\n   'shortName': 'BBQ',\n   'icon': {'prefix': 'https://ss3.4sqi.net/img/categories_v2/food/bbqalt_',\n    'suffix': '.png'},\n   'primary': True}],\n 'verified': False,\n 'stats': {'tipCount': 2},\n 'url': 'http://guessfamilybbq.com',\n 'price': {'tier': 2, 'message': 'Moderate', 'currency': '$'},\n 'likes': {'count': 3,\n  'groups': [{'type': 'others',\n    'count': 3,\n    'items': [{'id': '523101810',\n      'firstName': 'Kim',\n      'lastName': 'L',\n      'photo': {'prefix': 'https://fastly.4sqi.net/img/user/',\n       'suffix': '/523101810_b6Tc-UmE_7SCVdXDE8Pq3ic6LBxm-NaCSGfqaIF2mss1d7Dm3g0_SaCWKFVIdUDJCMCigZe0H.jpg'}},\n     {'id': '1939393',\n      'firstName': 'Caryn',\n      'lastName': 'B',\n      'photo': {'prefix': 'https://fastly.4sqi.net/img/user/',\n       'suffix': '/1CKMDU0VMIBJX2NF.jpg'}},\n     {'id': '133690',\n      'firstName': 'Mike',\n      'lastName': 'D',\n      'photo': {'prefix': 'https://fastly.4sqi.net/img/user/',\n       'suffix': '/XGM1ZZXR0VSNAHQK.jpg'}}]}],\n  'summary': '3 Likes'},\n 'dislike': False,\n 'ok': False,\n 'allowMenuUrlEdit': True,\n 'beenHere': {'count': 0,\n  'unconfirmedCount': 0,\n  'marked': False,\n  'lastCheckinExpiredAt': 0},\n 'specials': {'count': 0, 'items': []},\n 'photos': {'count': 7,\n  'groups': [{'type': 'venue',\n    'name': 'Venue photos',\n    'count': 7,\n    'items': [{'id': '5e1b5a25489217000962527d',\n      'createdAt': 1578850853,\n      'source': {'name': 'Swarm for iOS', 'url': 'https://www.swarmapp.com'},\n      'prefix': 'https://fastly.4sqi.net/img/general/',\n      'suffix': '/460231_OpqbgJBhYv_boMUSe0BJMLjTtlNKHfEtRiTG43_RayI.jpg',\n      'width': 1920,\n      'height': 1440,\n      'user': {'id': '460231',\n       'firstName': 'Greg',\n       'photo': {'prefix': 'https://fastly.4sqi.net/img/user/',\n        'suffix': '/460231_f2SHIzHx_VoxQOlywV6Wm-iwaZeVK0qBk0qzEgfp5_zhBud1mw2Wf0450q48J2fP3_SuUoDt5.jpg'}},\n      'visibility': 'public'}]}]},\n 'reasons': {'count': 0, 'items': []},\n 'hereNow': {'count': 0, 'summary': 'Nobody here', 'groups': []},\n 'createdAt': 1484417342,\n 'tips': {'count': 2,\n  'groups': [{'type': 'others',\n    'name': 'All tips',\n    'count': 2,\n    'items': [{'id': '5c55d5c3418686002cfac954',\n      'createdAt': 1549129155,\n      'text': 'So amazing, try the cheese grits!',\n      'type': 'user',\n      'canonicalUrl': 'https://foursquare.com/item/5c55d5c3418686002cfac954',\n      'lang': 'en',\n      'likes': {'count': 0, 'groups': []},\n      'logView': True,\n      'agreeCount': 0,\n      'disagreeCount': 0,\n      'todo': {'count': 0},\n      'user': {'id': '1939393',\n       'firstName': 'Caryn',\n       'lastName': 'B',\n       'photo': {'prefix': 'https://fastly.4sqi.net/img/user/',\n        'suffix': '/1CKMDU0VMIBJX2NF.jpg'}},\n      'authorInteractionType': 'liked'}]}]},\n 'shortUrl': 'http://4sq.com/2ioqiy1',\n 'timeZone': 'America/Chicago',\n 'listed': {'count': 5,\n  'groups': [{'type': 'others',\n    'name': 'Lists from other people',\n    'count': 5,\n    'items': [{'id': '5b4e9553974617002ce3a373',\n      'name': 'BBQ',\n      'description': '',\n      'type': 'others',\n      'user': {'id': '387525861',\n       'firstName': 'David',\n       'lastName': 'G',\n       'photo': {'prefix': 'https://fastly.4sqi.net/img/user/',\n        'suffix': '/blank_boy.png',\n        'default': True}},\n      'editable': False,\n      'public': True,\n      'collaborative': False,\n      'url': '/user/387525861/list/bbq',\n      'canonicalUrl': 'https://foursquare.com/user/387525861/list/bbq',\n      'createdAt': 1531876691,\n      'updatedAt': 1532569132,\n      'followers': {'count': 0},\n      'listItems': {'count': 84,\n       'items': [{'id': 'v587a693e15fb436da137bce7',\n         'createdAt': 1531878081}]}},\n     {'id': '5d2d362b86064700300b4c53',\n      'name': \"Texas Monthly's Top 25 New BBQ Joints in Texas\",\n      'description': 'The \"Midterm\" 2019 Edition\\n\\nhttps://www.texasmonthly.com/bbq/top-25-new-barbecue-joints-texas/',\n      'entities': [{'indices': [28, 94],\n        'type': 'url',\n        'object': {'url': 'https://www.texasmonthly.com/bbq/top-25-new-barbecue-joints-texas/'}}],\n      'type': 'others',\n      'user': {'id': '28924',\n       'firstName': 'Ben',\n       'lastName': 'T',\n       'photo': {'prefix': 'https://fastly.4sqi.net/img/user/',\n        'suffix': '/28924-LJQUBVNW0SFCW21M'}},\n      'editable': False,\n      'public': True,\n      'collaborative': False,\n      'url': '/strictlycircus/list/texas-monthlys-top-25-new-bbq-joints-in-texas',\n      'canonicalUrl': 'https://foursquare.com/strictlycircus/list/texas-monthlys-top-25-new-bbq-joints-in-texas',\n      'createdAt': 1563244075,\n      'updatedAt': 1563245630,\n      'followers': {'count': 0},\n      'listItems': {'count': 25,\n       'items': [{'id': 'v587a693e15fb436da137bce7',\n         'createdAt': 1563245607}]}}]}]},\n 'hours': {'status': 'Closed until 11:00 AM Friday',\n  'richStatus': {'entities': [], 'text': 'Closed until 11:00 AM Friday'},\n  'isOpen': False,\n  'isLocalHoliday': False,\n  'dayData': [],\n  'timeframes': [{'days': 'Fri\u2013Sat',\n    'open': [{'renderedTime': '11:00 AM\u20137:00 PM'}],\n    'segments': []}]},\n 'seasonalHours': [],\n 'defaultHours': {'status': 'Closed until 11:00 AM Friday',\n  'richStatus': {'entities': [], 'text': 'Closed until 11:00 AM Friday'},\n  'isOpen': False,\n  'isLocalHoliday': False,\n  'dayData': [],\n  'timeframes': [{'days': 'Fri\u2013Sat',\n    'open': [{'renderedTime': '11:00 AM\u20137:00 PM'}],\n    'segments': []}]},\n 'pageUpdates': {'count': 0, 'items': []},\n 'inbox': {'count': 0, 'items': []},\n 'attributes': {'groups': [{'type': 'price',\n    'name': 'Price',\n    'summary': '$$',\n    'count': 1,\n    'items': [{'displayName': 'Price', 'displayValue': '$$', 'priceTier': 2}]},\n   {'type': 'payments',\n    'name': 'Credit Cards',\n    'summary': 'Credit Cards',\n    'count': 7,\n    'items': [{'displayName': 'Credit Cards', 'displayValue': 'Yes'}]},\n   {'type': 'outdoorSeating',\n    'name': 'Outdoor Seating',\n    'summary': 'Outdoor Seating',\n    'count': 1,\n    'items': [{'displayName': 'Outdoor Seating', 'displayValue': 'Yes'}]},\n   {'type': 'serves',\n    'name': 'Menus',\n    'summary': 'Lunch & Dinner',\n    'count': 8,\n    'items': [{'displayName': 'Lunch', 'displayValue': 'Lunch'},\n     {'displayName': 'Dinner', 'displayValue': 'Dinner'}]}]},\n 'bestPhoto': {'id': '5e1b5a25489217000962527d',\n  'createdAt': 1578850853,\n  'source': {'name': 'Swarm for iOS', 'url': 'https://www.swarmapp.com'},\n  'prefix': 'https://fastly.4sqi.net/img/general/',\n  'suffix': '/460231_OpqbgJBhYv_boMUSe0BJMLjTtlNKHfEtRiTG43_RayI.jpg',\n  'width': 1920,\n  'height': 1440,\n  'visibility': 'public'}}"
+                    },
+                    "execution_count": 30,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "result = requests.get(url).json()\nprint(result['response']['venue'].keys())\nresult['response']['venue']"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 31,
+            "metadata": {},
+            "outputs": [
+                {
+                    "name": "stdout",
+                    "output_type": "stream",
+                    "text": "This venue has not been rated yet.\n"
+                }
+            ],
+            "source": "try:\n    print(result['response']['venue']['rating'])\nexcept:\n    print('This venue has not been rated yet.')"
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### Get number of tips."
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 32,
+            "metadata": {},
+            "outputs": [
+                {
+                    "data": {
+                        "text/plain": "2"
+                    },
+                    "execution_count": 32,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "result['response']['venue']['tips']['count']"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 33,
+            "metadata": {},
+            "outputs": [
+                {
+                    "data": {
+                        "text/plain": "'https://api.foursquare.com/v2/venues/587a693e15fb436da137bce7/tips?client_id=DPR2TRJDTRBYCTN4YIRLNJ4F3GRM3IHAWXWCB4MQGXDU2H5E&client_secret=ZVGOPN1OCEFCGB5RDDUQXBGE11AXDT2OHB0VNGFUAZUO3COZ&v=20200713&limit=15'"
+                    },
+                    "execution_count": 33,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "limit = 15\nurl = 'https://api.foursquare.com/v2/venues/{}/tips?client_id={}&client_secret={}&v={}&limit={}'.format(venue_id, CLIENT_ID, CLIENT_SECRET, VERSION,limit)\nurl"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 34,
+            "metadata": {},
+            "outputs": [
+                {
+                    "data": {
+                        "text/plain": "{'meta': {'code': 200, 'requestId': '5f0c74380ab6c4151b457937'},\n 'response': {'tips': {'count': 2,\n   'items': [{'id': '5c55d5c3418686002cfac954',\n     'createdAt': 1549129155,\n     'text': 'So amazing, try the cheese grits!',\n     'type': 'user',\n     'canonicalUrl': 'https://foursquare.com/item/5c55d5c3418686002cfac954',\n     'lang': 'en',\n     'likes': {'count': 0, 'groups': []},\n     'logView': True,\n     'agreeCount': 0,\n     'disagreeCount': 0,\n     'todo': {'count': 0},\n     'user': {'id': '1939393',\n      'firstName': 'Caryn',\n      'lastName': 'B',\n      'photo': {'prefix': 'https://fastly.4sqi.net/img/user/',\n       'suffix': '/1CKMDU0VMIBJX2NF.jpg'}},\n     'authorInteractionType': 'liked'}]}}}"
+                    },
+                    "execution_count": 34,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "results = requests.get(url).json()\nresults"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 35,
+            "metadata": {},
+            "outputs": [
+                {
+                    "data": {
+                        "text/plain": "dict_keys(['id', 'createdAt', 'text', 'type', 'canonicalUrl', 'lang', 'likes', 'logView', 'agreeCount', 'disagreeCount', 'todo', 'user', 'authorInteractionType'])"
+                    },
+                    "execution_count": 35,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "tips = results['response']['tips']['items']\n\ntip = results['response']['tips']['items'][0]\ntip.keys()"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 36,
+            "metadata": {},
+            "outputs": [
+                {
+                    "data": {
+                        "text/html": "<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>text</th>\n      <th>agreeCount</th>\n      <th>disagreeCount</th>\n      <th>id</th>\n      <th>user.firstName</th>\n      <th>user.lastName</th>\n      <th>user.gender</th>\n      <th>user.id</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>So amazing, try the cheese grits!</td>\n      <td>0</td>\n      <td>0</td>\n      <td>5c55d5c3418686002cfac954</td>\n      <td>Caryn</td>\n      <td>B</td>\n      <td>NaN</td>\n      <td>1939393</td>\n    </tr>\n  </tbody>\n</table>\n</div>",
+                        "text/plain": "                                text  agreeCount  disagreeCount  \\\n0  So amazing, try the cheese grits!  0           0               \n\n                         id user.firstName user.lastName  user.gender  user.id  \n0  5c55d5c3418686002cfac954  Caryn          B            NaN           1939393  "
+                    },
+                    "execution_count": 36,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "pd.set_option('display.max_colwidth', -1)\n\ntips_df = json_normalize(tips)\n\nfiltered_columns = ['text', 'agreeCount', 'disagreeCount', 'id', 'user.firstName', 'user.lastName', 'user.gender', 'user.id']\ntips_filtered = tips_df.loc[:, filtered_columns]\n\ntips_filtered"
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### Validate Foursquare credentials. "
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 37,
+            "metadata": {},
+            "outputs": [
+                {
+                    "name": "stdout",
+                    "output_type": "stream",
+                    "text": "Your credentials:\nCLIENT_ID: DPR2TRJDTRBYCTN4YIRLNJ4F3GRM3IHAWXWCB4MQGXDU2H5E\nCLIENT_SECRET: ZVGOPN1OCEFCGB5RDDUQXBGE11AXDT2OHB0VNGFUAZUO3COZ\n"
+                }
+            ],
+            "source": "CLIENT_ID = 'DPR2TRJDTRBYCTN4YIRLNJ4F3GRM3IHAWXWCB4MQGXDU2H5E'\nCLIENT_SECRET = 'ZVGOPN1OCEFCGB5RDDUQXBGE11AXDT2OHB0VNGFUAZUO3COZ'\nVERSION = '20200713'\nLIMIT = 30\nprint('Your credentials:')\nprint('CLIENT_ID: ' + CLIENT_ID)\nprint('CLIENT_SECRET: ' + CLIENT_SECRET)"
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### Address of potential property in Downtown Corpus Christi."
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 38,
+            "metadata": {},
+            "outputs": [
+                {
+                    "name": "stdout",
+                    "output_type": "stream",
+                    "text": "The geographical coordiate of Corpus Christi are 27.79598805516865, -97.42992407545927.\n"
+                }
+            ],
+            "source": "address = '620 Old Robstown Rd, Corpus Christi, TX'\n\ngeolocator = Nominatim(user_agent=\"Texas_agent\")\nlocation = geolocator.geocode(address)\nlatitude = location.latitude\nlongitude = location.longitude\nprint('The geographical coordiate of Corpus Christi are {}, {}.'.format(latitude, longitude))"
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### '620 Old Robstown Rd, Corpus Christi, TX' mark on Folium map of Waco."
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 39,
+            "metadata": {
+                "scrolled": true
+            },
+            "outputs": [
+                {
+                    "data": {
+                        "text/html": "<div style=\"width:100%;\"><div style=\"position:relative;width:100%;height:0;padding-bottom:60%;\"><span style=\"color:#565656\">Make this Notebook Trusted to load map: File -> Trust Notebook</span><iframe src=\"about:blank\" style=\"position:absolute;width:100%;height:100%;left:0;top:0;border:none !important;\" data-html=PCFET0NUWVBFIGh0bWw+CjxoZWFkPiAgICAKICAgIDxtZXRhIGh0dHAtZXF1aXY9ImNvbnRlbnQtdHlwZSIgY29udGVudD0idGV4dC9odG1sOyBjaGFyc2V0PVVURi04IiAvPgogICAgPHNjcmlwdD5MX1BSRUZFUl9DQU5WQVMgPSBmYWxzZTsgTF9OT19UT1VDSCA9IGZhbHNlOyBMX0RJU0FCTEVfM0QgPSBmYWxzZTs8L3NjcmlwdD4KICAgIDxzY3JpcHQgc3JjPSJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvbnBtL2xlYWZsZXRAMS4yLjAvZGlzdC9sZWFmbGV0LmpzIj48L3NjcmlwdD4KICAgIDxzY3JpcHQgc3JjPSJodHRwczovL2FqYXguZ29vZ2xlYXBpcy5jb20vYWpheC9saWJzL2pxdWVyeS8xLjExLjEvanF1ZXJ5Lm1pbi5qcyI+PC9zY3JpcHQ+CiAgICA8c2NyaXB0IHNyYz0iaHR0cHM6Ly9tYXhjZG4uYm9vdHN0cmFwY2RuLmNvbS9ib290c3RyYXAvMy4yLjAvanMvYm9vdHN0cmFwLm1pbi5qcyI+PC9zY3JpcHQ+CiAgICA8c2NyaXB0IHNyYz0iaHR0cHM6Ly9jZG5qcy5jbG91ZGZsYXJlLmNvbS9hamF4L2xpYnMvTGVhZmxldC5hd2Vzb21lLW1hcmtlcnMvMi4wLjIvbGVhZmxldC5hd2Vzb21lLW1hcmtlcnMuanMiPjwvc2NyaXB0PgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvbnBtL2xlYWZsZXRAMS4yLjAvZGlzdC9sZWFmbGV0LmNzcyIvPgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL21heGNkbi5ib290c3RyYXBjZG4uY29tL2Jvb3RzdHJhcC8zLjIuMC9jc3MvYm9vdHN0cmFwLm1pbi5jc3MiLz4KICAgIDxsaW5rIHJlbD0ic3R5bGVzaGVldCIgaHJlZj0iaHR0cHM6Ly9tYXhjZG4uYm9vdHN0cmFwY2RuLmNvbS9ib290c3RyYXAvMy4yLjAvY3NzL2Jvb3RzdHJhcC10aGVtZS5taW4uY3NzIi8+CiAgICA8bGluayByZWw9InN0eWxlc2hlZXQiIGhyZWY9Imh0dHBzOi8vbWF4Y2RuLmJvb3RzdHJhcGNkbi5jb20vZm9udC1hd2Vzb21lLzQuNi4zL2Nzcy9mb250LWF3ZXNvbWUubWluLmNzcyIvPgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL2NkbmpzLmNsb3VkZmxhcmUuY29tL2FqYXgvbGlicy9MZWFmbGV0LmF3ZXNvbWUtbWFya2Vycy8yLjAuMi9sZWFmbGV0LmF3ZXNvbWUtbWFya2Vycy5jc3MiLz4KICAgIDxsaW5rIHJlbD0ic3R5bGVzaGVldCIgaHJlZj0iaHR0cHM6Ly9yYXdnaXQuY29tL3B5dGhvbi12aXN1YWxpemF0aW9uL2ZvbGl1bS9tYXN0ZXIvZm9saXVtL3RlbXBsYXRlcy9sZWFmbGV0LmF3ZXNvbWUucm90YXRlLmNzcyIvPgogICAgPHN0eWxlPmh0bWwsIGJvZHkge3dpZHRoOiAxMDAlO2hlaWdodDogMTAwJTttYXJnaW46IDA7cGFkZGluZzogMDt9PC9zdHlsZT4KICAgIDxzdHlsZT4jbWFwIHtwb3NpdGlvbjphYnNvbHV0ZTt0b3A6MDtib3R0b206MDtyaWdodDowO2xlZnQ6MDt9PC9zdHlsZT4KICAgIAogICAgICAgICAgICA8c3R5bGU+ICNtYXBfODRjZjQ5OTAzZmYyNGIwOWE1Mjc4NTgwYzViNTA5OGIgewogICAgICAgICAgICAgICAgcG9zaXRpb24gOiByZWxhdGl2ZTsKICAgICAgICAgICAgICAgIHdpZHRoIDogMTAwLjAlOwogICAgICAgICAgICAgICAgaGVpZ2h0OiAxMDAuMCU7CiAgICAgICAgICAgICAgICBsZWZ0OiAwLjAlOwogICAgICAgICAgICAgICAgdG9wOiAwLjAlOwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICA8L3N0eWxlPgogICAgICAgIAo8L2hlYWQ+Cjxib2R5PiAgICAKICAgIAogICAgICAgICAgICA8ZGl2IGNsYXNzPSJmb2xpdW0tbWFwIiBpZD0ibWFwXzg0Y2Y0OTkwM2ZmMjRiMDlhNTI3ODU4MGM1YjUwOThiIiA+PC9kaXY+CiAgICAgICAgCjwvYm9keT4KPHNjcmlwdD4gICAgCiAgICAKCiAgICAgICAgICAgIAogICAgICAgICAgICAgICAgdmFyIGJvdW5kcyA9IG51bGw7CiAgICAgICAgICAgIAoKICAgICAgICAgICAgdmFyIG1hcF84NGNmNDk5MDNmZjI0YjA5YTUyNzg1ODBjNWI1MDk4YiA9IEwubWFwKAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgJ21hcF84NGNmNDk5MDNmZjI0YjA5YTUyNzg1ODBjNWI1MDk4YicsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB7Y2VudGVyOiBbMjcuNzk1OTg4MDU1MTY4NjUsLTk3LjQyOTkyNDA3NTQ1OTI3XSwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHpvb206IDE0LAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgbWF4Qm91bmRzOiBib3VuZHMsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBsYXllcnM6IFtdLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgd29ybGRDb3B5SnVtcDogZmFsc2UsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBjcnM6IEwuQ1JTLkVQU0czODU3CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIH0pOwogICAgICAgICAgICAKICAgICAgICAKICAgIAogICAgICAgICAgICB2YXIgdGlsZV9sYXllcl8zMmE2NDdlYThmYTA0MWY2YmJjMzVmMDdiYjZhZjQzMSA9IEwudGlsZUxheWVyKAogICAgICAgICAgICAgICAgJ2h0dHBzOi8ve3N9LnRpbGUub3BlbnN0cmVldG1hcC5vcmcve3p9L3t4fS97eX0ucG5nJywKICAgICAgICAgICAgICAgIHsKICAiYXR0cmlidXRpb24iOiBudWxsLAogICJkZXRlY3RSZXRpbmEiOiBmYWxzZSwKICAibWF4Wm9vbSI6IDE4LAogICJtaW5ab29tIjogMSwKICAibm9XcmFwIjogZmFsc2UsCiAgInN1YmRvbWFpbnMiOiAiYWJjIgp9CiAgICAgICAgICAgICAgICApLmFkZFRvKG1hcF84NGNmNDk5MDNmZjI0YjA5YTUyNzg1ODBjNWI1MDk4Yik7CiAgICAgICAgCiAgICAKICAgICAgICAgICAgdmFyIGNpcmNsZV9tYXJrZXJfZGQ0MDMwYjQ0MjU5NGFiYTgyMDllMTA0YzA5YjIzMzUgPSBMLmNpcmNsZU1hcmtlcigKICAgICAgICAgICAgICAgIFsyNy43OTU5ODgwNTUxNjg2NSwtOTcuNDI5OTI0MDc1NDU5MjddLAogICAgICAgICAgICAgICAgewogICJidWJibGluZ01vdXNlRXZlbnRzIjogdHJ1ZSwKICAiY29sb3IiOiAicmVkIiwKICAiZGFzaEFycmF5IjogbnVsbCwKICAiZGFzaE9mZnNldCI6IG51bGwsCiAgImZpbGwiOiB0cnVlLAogICJmaWxsQ29sb3IiOiAicmVkIiwKICAiZmlsbE9wYWNpdHkiOiAwLjYsCiAgImZpbGxSdWxlIjogImV2ZW5vZGQiLAogICJsaW5lQ2FwIjogInJvdW5kIiwKICAibGluZUpvaW4iOiAicm91bmQiLAogICJvcGFjaXR5IjogMS4wLAogICJyYWRpdXMiOiAxMCwKICAic3Ryb2tlIjogdHJ1ZSwKICAid2VpZ2h0IjogMwp9CiAgICAgICAgICAgICAgICApLmFkZFRvKG1hcF84NGNmNDk5MDNmZjI0YjA5YTUyNzg1ODBjNWI1MDk4Yik7CiAgICAgICAgICAgIAogICAgCiAgICAgICAgICAgIHZhciBwb3B1cF8zYjJjNzMxYWJhNTQ0MWUzYTY5N2FkOGVhODE5NTkxMSA9IEwucG9wdXAoe21heFdpZHRoOiAnMzAwJ30pOwoKICAgICAgICAgICAgCiAgICAgICAgICAgICAgICB2YXIgaHRtbF9mY2Q3ZTc5MGY5MzA0MDFkOWI4YzUxY2NiNzQ4ZGI4MiA9ICQoJzxkaXYgaWQ9Imh0bWxfZmNkN2U3OTBmOTMwNDAxZDliOGM1MWNjYjc0OGRiODIiIHN0eWxlPSJ3aWR0aDogMTAwLjAlOyBoZWlnaHQ6IDEwMC4wJTsiPkRvd250b3duIFdhY28gTG9jYXRpb248L2Rpdj4nKVswXTsKICAgICAgICAgICAgICAgIHBvcHVwXzNiMmM3MzFhYmE1NDQxZTNhNjk3YWQ4ZWE4MTk1OTExLnNldENvbnRlbnQoaHRtbF9mY2Q3ZTc5MGY5MzA0MDFkOWI4YzUxY2NiNzQ4ZGI4Mik7CiAgICAgICAgICAgIAoKICAgICAgICAgICAgY2lyY2xlX21hcmtlcl9kZDQwMzBiNDQyNTk0YWJhODIwOWUxMDRjMDliMjMzNS5iaW5kUG9wdXAocG9wdXBfM2IyYzczMWFiYTU0NDFlM2E2OTdhZDhlYTgxOTU5MTEpOwoKICAgICAgICAgICAgCiAgICAgICAgCjwvc2NyaXB0Pg== onload=\"this.contentDocument.open();this.contentDocument.write(atob(this.getAttribute('data-html')));this.contentDocument.close();\" allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe></div></div>",
+                        "text/plain": "<folium.folium.Map at 0x7f52de426b38>"
+                    },
+                    "execution_count": 39,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "map_corpus = folium.Map(location=[latitude, longitude], zoom_start=14)\n\nfolium.features.CircleMarker(\n    [latitude, longitude],\n    radius=10,\n    color='red',\n    popup='Downtown Waco Location',\n    fill = True,\n    fill_color = 'red',\n    fill_opacity = 0.6\n).add_to(map_corpus)\n \nmap_corpus"
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### First search for \"BBQ\" in Downtown Corpus Christi."
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 40,
+            "metadata": {},
+            "outputs": [
+                {
+                    "name": "stdout",
+                    "output_type": "stream",
+                    "text": "bbq.... OK!\n"
+                }
+            ],
+            "source": "search_query = 'bbq'\nradius = 500\nprint(search_query + '.... OK!')"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 41,
+            "metadata": {},
+            "outputs": [
+                {
+                    "data": {
+                        "text/plain": "'https://api.foursquare.com/v2/venues/search?client_id=DPR2TRJDTRBYCTN4YIRLNJ4F3GRM3IHAWXWCB4MQGXDU2H5E&client_secret=ZVGOPN1OCEFCGB5RDDUQXBGE11AXDT2OHB0VNGFUAZUO3COZ&ll=27.79598805516865,-97.42992407545927&v=20200713&query=bbq&radius=500&limit=30'"
+                    },
+                    "execution_count": 41,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "url = 'https://api.foursquare.com/v2/venues/search?client_id={}&client_secret={}&ll={},{}&v={}&query={}&radius={}&limit={}'.format(CLIENT_ID, CLIENT_SECRET, latitude, longitude, VERSION, search_query, radius, LIMIT)\nurl"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 42,
+            "metadata": {},
+            "outputs": [
+                {
+                    "data": {
+                        "text/plain": "{'meta': {'code': 200, 'requestId': '5f0c7554c740860680bdc8ca'},\n 'response': {'venues': []}}"
+                    },
+                    "execution_count": 42,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "results = requests.get(url).json()\nresults"
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### No locations within 500 meters when search \"BBQ\"."
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### Second search for \"Barbeque\" in Downtown Corpus Christi."
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 43,
+            "metadata": {},
+            "outputs": [
+                {
+                    "name": "stdout",
+                    "output_type": "stream",
+                    "text": "barbeque.... OK!\n"
+                }
+            ],
+            "source": "search_query = 'barbeque'\nradius = 500\nprint(search_query + '.... OK!')"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 44,
+            "metadata": {},
+            "outputs": [
+                {
+                    "data": {
+                        "text/plain": "'https://api.foursquare.com/v2/venues/search?client_id=DPR2TRJDTRBYCTN4YIRLNJ4F3GRM3IHAWXWCB4MQGXDU2H5E&client_secret=ZVGOPN1OCEFCGB5RDDUQXBGE11AXDT2OHB0VNGFUAZUO3COZ&ll=27.79598805516865,-97.42992407545927&v=20200713&query=barbeque&radius=500&limit=30'"
+                    },
+                    "execution_count": 44,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "url = 'https://api.foursquare.com/v2/venues/search?client_id={}&client_secret={}&ll={},{}&v={}&query={}&radius={}&limit={}'.format(CLIENT_ID, CLIENT_SECRET, latitude, longitude, VERSION, search_query, radius, LIMIT)\nurl"
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 45,
+            "metadata": {},
+            "outputs": [
+                {
+                    "data": {
+                        "text/plain": "{'meta': {'code': 200, 'requestId': '5f0c75c0521bc909eb20f1f7'},\n 'response': {'venues': []}}"
+                    },
+                    "execution_count": 45,
+                    "metadata": {},
+                    "output_type": "execute_result"
+                }
+            ],
+            "source": "results = requests.get(url).json()\nresults"
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": "### No locations within 500 meters when search \"Barbeque\"."
+        }
+    ],
+    "metadata": {
+        "kernelspec": {
+            "display_name": "Python 3.6",
+            "language": "python",
+            "name": "python3"
+        },
+        "language_info": {
+            "codemirror_mode": {
+                "name": "ipython",
+                "version": 3
+            },
+            "file_extension": ".py",
+            "mimetype": "text/x-python",
+            "name": "python",
+            "nbconvert_exporter": "python",
+            "pygments_lexer": "ipython3",
+            "version": "3.6.9"
+        }
+    },
+    "nbformat": 4,
+    "nbformat_minor": 1
+}
